@@ -2,11 +2,6 @@
 output: html_document
 ---
 
-### Import
 ```{r, message = FALSE}
 
 ```
-
-### Tidy
-
-### Transform
