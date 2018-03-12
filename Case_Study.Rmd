@@ -1,0 +1,231 @@
+---
+title: "Case_Study"
+output: html_document
+---
+
+```{r ,include=FALSE}
+#Alle Packages
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+```
+##Einführung
+
+Um heraus zu finden, welche Fahrzeuge kritisch sind, müssen sowohl die fehlerhaften Einzelteile, als auch die Komponenten, welche diese enthalten oder selber fehlerhaft sind, überprüft werden.
+
+##Funktionen
+
+###Funktion für Überblick über Dataframes
+```{r}
+  firstGlance <- function(x){
+    print(summary(x))
+    cat("\n")
+    print(str(x))
+    cat("\n")
+    print(head(x))
+    cat("\n")
+    print(tail(x))
+  }
+```
+###Funktion für NA Überprüfung
+
+```{r}
+  NATest <- function(x){
+    #print(summarize(group_by(x, Herstellernummer)))
+    #print(summarize(group_by(x, Werksnummer)))
+    for (i in 1:ncol(x)){
+      if (nrow((x[is.na(x[i]),])) > 0){
+        print(c("NA's in ",names(x[i])))
+        cat("\n")
+        print(x[is.na(x[i]),])
+        cat("\n")
+        cat("\n")
+      }
+    }
+  }
+```
+
+##Einzelteile
+
+Zunächst müssen die einzelnen Tabellen der Einzelteile importiert werden, wobei auf die Zeilen und Reihentrennung(Komma o. Semikolon) zu achten ist.
+```{r , }
+  T11 <- read.csv2("Einzelteil_T11.csv", stringsAsFactors = FALSE)
+  T14 <- read.csv2("Einzelteil_T14.csv", stringsAsFactors = FALSE)
+  T15 <- read.csv2("Einzelteil_T15.csv", stringsAsFactors = FALSE)
+  T16 <- read.csv("Einzelteil_T16.csv", stringsAsFactors = FALSE)
+  T19 <- read.csv("Einzelteil_T19.csv", stringsAsFactors = FALSE)
+  T20 <- read.csv2("Einzelteil_T20.csv", stringsAsFactors = FALSE)
+```
+  
+###T11
+```{r}
+firstGlance(T11)
+NATest(T11)
+```
+Keine Auffälligkeiten außer Datumsformat in Character
+```{r}
+T11.new <- T11
+T11.new$Produktionsdatum <- as.Date(T11$Produktionsdatum, format = "%Y-%m-%d")
+```
+
+###T14
+```{r}
+firstGlance(T14)
+NATest(T14)
+```
+Keine Auffälligkeiten außer Datumsformat in Character
+```{r}
+T14.new <- T14
+T14.new$Produktionsdatum <- as.Date(T14$Produktionsdatum, format = "%Y-%m-%d")
+```
+
+###T15
+```{r}
+firstGlance(T15)
+NATest(T15)
+```
+Falsches Datumsformat
+```{r}
+T15.new <- T15
+names(T15.new) <- names(T14)
+T15.new$Produktionsdatum <-  as.Date(format(as.Date(T15.new$Produktionsdatum, format = "%d.%m.%Y"), "%Y-%m-%d"))
+```
+
+###T16
+```{r}
+firstGlance(T16)
+NATest(T16)
+```
+Falsches Datumsformat, mit Origin angegeben
+```{r}
+T16.new <- T16 %>%
+    select(1:6)
+
+T16.new$Produktionsdatum <- as.Date(T16.new$Produktionsdatum, format = "%d",origin = as.Date("1970-01-01", format="%Y-%m-%d"))
+T16.new <- select(T16.new,1:6)
+names(T16.new) <- names(T14)
+```
+
+###T19
+```{r}
+firstGlance(T19)
+```
+Zeilen sind zum Teil nebeneinander gerutscht
+```{r}
+T19.1 <- select(T19[!is.na(T19$IDNummer),],1:6) 
+T19.2 <- select(T19[!is.na(T19$IDNummer1),],7:12)
+names(T19.2) <- names(T19.1)
+```
+Betrachtung der einzelnen Tabellen
+```{r}
+firstGlance(T19.1)
+NATest(T19.1)
+
+firstGlance(T19.2)
+NATest(T19.2)
+```
+IDNummern sind jeweils falsch
+```{r warning=FALSE}
+T19.2sep <- T19.2 %>%
+  separate(IDNummer, c("BT","Herst","Werk","X"), sep = c("-","-","-")) 
+T19.2sep$BT <- 19
+T19.2uni <- T19.2sep%>%
+  unite(col = IDNummer, BT, Herstellernummer, Werksnummer, X, sep = c("-","-","-"),remove = FALSE)%>%
+  select( X1,IDNummer,Produktionsdatum,Herstellernummer,Werksnummer,Fehlerhaft)
+  
+
+T19.1sep <- T19.1%>%
+  separate(IDNummer, c("BT","Rest"),sep = c("-"), extra = "merge")
+T19.1sep$BT <- 19
+T19.1uni <- T19.1sep%>%
+  unite(col = IDNummer, BT, Rest, sep = c("-"))%>%
+  select(X1,IDNummer,Produktionsdatum,Herstellernummer,Werksnummer,Fehlerhaft)
+  
+T19.new <- arrange(bind_rows(T19.1uni,T19.2uni),X1)
+names(T19.new) <- names(T14)
+```
+
+###T20
+```{r}
+firstGlance(T20)
+NATest(T20)
+```
+Falsches Datumsformat und NA's
+```{r}
+T20.new <- T20
+T20.new$Produktionsdatum <-  as.Date(format(as.Date(T20$Produktionsdatum, format = "%d.%m.%Y"), "%Y-%m-%d"))
+
+T20.new$Fehlerhaft[T20$IDNummer == "20-209-2091-96178"] <- 1
+T20.new$X[T20$IDNummer == "20-209-2091-96178"] <- 163764
+T20.new$Herstellernummer[T20$X == 699] <- 211
+T20.new$Werksnummer[T20$X == 129019] <- 163764
+```
+
+###Fehlerhafte Teile
+
+```{r}
+T11F <- T11.new %>%
+  filter(Fehlerhaft == 1)%>%
+  select(2:3)
+T14F <- T14.new %>%
+ filter(Fehlerhaft == 1)%>%
+  select(2:3)
+T15F <- T15.new %>%
+ filter(Fehlerhaft == 1)%>%
+  select(2:3)
+T16F <- T16.new %>%
+  filter(Fehlerhaft == 1) %>%
+  select(2:3)
+T19F <- T19.new %>%
+  filter(Fehlerhaft == 1) %>%
+  select(2:3)
+T20F <- T20.new %>%
+  filter(Fehlerhaft == 1) %>%
+  select(2:3)
+```
+```{r include=FALSE}
+names(T11F) <- c("ID_T11","T11_Datum")
+names(T14F) <- c("ID_T14","T14_Datum")
+names(T15F) <- c("ID_T15","T15_Datum")
+names(T16F) <- c("ID_T16","T16_Datum")
+names(T19F) <- c("ID_T19","T19_Datum")
+names(T20F) <- c("ID_T20","T20_Datum")
+```
+Auffälligkeiten
+```{r}
+nrow(T11F)
+nrow(T14F)
+nrow(T15F)
+nrow(T16F)
+nrow(T19F)
+nrow(T20F)
+```
+Bei T15 und T20 sehr viele fehlerhafte Teile
+
+```{r}
+T15G <- aggregate(T15.new$Fehlerhaft, by=list(Produktionsdatum=T15.new$Produktionsdatum), FUN=sum)
+T20G <- aggregate(T20.new$Fehlerhaft, by=list(Produktionsdatum=T20.new$Produktionsdatum), FUN=sum)
+
+T15GC <- count(T15.new,Produktionsdatum)
+T15FC <- count(T15F,T15_Datum)
+T15CC <- left_join(T15GC,T15FC, by = c("Produktionsdatum" = "T15_Datum" ))
+T15CC[is.na(T15CC[,3]),3] <- 0
+
+ggplot(T15CC, aes(x = Produktionsdatum))+
+  geom_bar(stat = "identity",aes(y = n.x, col = "red", fill = "red"))+
+  geom_bar(stat = "identity",aes(y = n.y, col = "blue", fill = "blue"))+
+  scale_fill_discrete(name = "T15 Lieferung", labels = c("Fehlerhaft","Fehlerfrei"))+
+  guides(color = FALSE)
+
+T20GC <- count(T20.new,Produktionsdatum)
+T20FC <- count(T20F,T20_Datum)
+T20CC <- left_join(T20GC,T20FC, by = c("Produktionsdatum" = "T20_Datum" ))
+T20CC[is.na(T20CC[,3]),3] <- 0
+
+ggplot(T20CC, aes(x = Produktionsdatum))+
+  geom_bar(stat = "identity",aes(y = n.x, col = "red", fill = "red"))+
+  geom_bar(stat = "identity",aes(y = n.y, col = "blue", fill = "blue"))+
+  scale_fill_discrete(name = "T20 Produktion", labels = c("Fehlerhaft","Fehlerfrei"))+
+  guides(color = FALSE)
+```
