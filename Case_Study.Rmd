@@ -159,7 +159,7 @@ T20.new$Produktionsdatum <-  as.Date(format(as.Date(T20$Produktionsdatum, format
 T20.new$Fehlerhaft[T20$IDNummer == "20-209-2091-96178"] <- 1
 T20.new$X[T20$IDNummer == "20-209-2091-96178"] <- 163764
 T20.new$Herstellernummer[T20$X == 699] <- 211
-T20.new$Werksnummer[T20$X == 129019] <- 163764
+T20.new$Werksnummer[T20$X == 129019] <- 2111
 ```
 
 ###Fehlerhafte Teile
@@ -212,6 +212,7 @@ T15FC <- count(T15F,T15_Datum)
 T15CC <- left_join(T15GC,T15FC, by = c("Produktionsdatum" = "T15_Datum" ))
 T15CC[is.na(T15CC[,3]),3] <- 0
 
+#Plot um Fehlerverlauf zu zeigen
 ggplot(T15CC, aes(x = Produktionsdatum))+
   geom_bar(stat = "identity",aes(y = n.x, col = "red", fill = "red"))+
   geom_bar(stat = "identity",aes(y = n.y, col = "blue", fill = "blue"))+
@@ -223,9 +224,50 @@ T20FC <- count(T20F,T20_Datum)
 T20CC <- left_join(T20GC,T20FC, by = c("Produktionsdatum" = "T20_Datum" ))
 T20CC[is.na(T20CC[,3]),3] <- 0
 
+#Plot um Fehlerverlauf zu zeigen
 ggplot(T20CC, aes(x = Produktionsdatum))+
   geom_bar(stat = "identity",aes(y = n.x, col = "red", fill = "red"))+
   geom_bar(stat = "identity",aes(y = n.y, col = "blue", fill = "blue"))+
   scale_fill_discrete(name = "T20 Produktion", labels = c("Fehlerhaft","Fehlerfrei"))+
   guides(color = FALSE)
+
+#Fehleranteile der Werke
+ggplot(T15.new, aes(x = as.factor(Werksnummer), fill = as.factor(Fehlerhaft)))+
+  geom_bar(position = "fill")+
+  scale_fill_manual(name = "Fehlerhaft",values = c("#00BFC4","#F8766D"))+
+  ggtitle("Prozentualer Anteil Fehlerhafter Teile pro Werk - T 15")+
+  xlab("Werksnummer")+
+  ylab("Prozent. Anteil")
+
+#Fehleranteile der Werke
+ggplot(T20.new, aes(x = as.factor(Werksnummer), fill = as.factor(Fehlerhaft)))+
+  geom_bar(position = "fill")+
+  scale_fill_manual(name = "Fehlerhaft",values = c("#00BFC4","#F8766D"))+
+  ggtitle("Prozentualer Anteil Fehlerhafter Teile pro Werk - T 20")+
+  xlab("Werksnummer")+
+  ylab("Prozent. Anteil")
+
+
 ```
+
+##Komponenten
+
+Es müssen alle Komponenten herausgefiltert werden, die beschädigt sind oder in denen fehlerhafte Teile verbaut sind.
+
+```{r}
+path.K2LE1B <- "Bestandteile_Komponente_K2LE1.csv" 
+path.K2LE2B <- "Bestandteile_Komponente_K2LE2.csv" 
+path.K2LE1 <- "Komponente_K2LE1.csv" 
+path.K2LE2 <- "Komponente_K2LE1.csv" 
+
+K2LE1B <- read.csv2(path.K2LE1B, stringsAsFactors = FALSE)
+K2LE2B <- read.csv2(path.K2LE2B, stringsAsFactors = FALSE)
+K2LE1 <- read.csv2(path.K2LE1, stringsAsFactors = FALSE)
+K2LE2 <- read.csv2(path.K2LE2, stringsAsFactors = FALSE)
+```
+
+```{r}
+firstGlance(K2LE2)
+```
+IDNummer Fehlerhaft          
+
