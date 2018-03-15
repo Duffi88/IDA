@@ -32,18 +32,63 @@ Um heraus zu finden, welche Fahrzeuge kritisch sind, müssen sowohl die fehlerha
 
 ```{r}
   NATest <- function(x){
-    #print(summarize(group_by(x, Herstellernummer)))
-    #print(summarize(group_by(x, Werksnummer)))
-    for (i in 1:ncol(x)){
-      if (nrow((x[is.na(x[i]),])) > 0){
-        print(c("NA's in ",names(x[i])))
-        cat("\n")
-        print(x[is.na(x[i]),])
-        cat("\n")
-        cat("\n")
+    if(any(is.na(x))){
+      for(i in 1:ncol(x)){
+        if (nrow(x[is.na(x[i]),]) > 0){
+          print(paste("NA´s in",names(x[i])))
+          cat("\n")
+          print(x[is.na(x[i]),])
+          cat("\n")
+          cat("\n")
+        }
       }
+    }else{
+      print("Es existieren keine NA´s.")
     }
   }
+```
+
+###Funktion zum Prüfen, ob alle Spaltenbezeichungen und -anzahl richtig sind
+```{r}
+Namen <- function(x){
+  n <- c("X","IDNummer","Produktionsdatum","Herstellernummer","Werksnummer","Fehlerhaft")
+  if(sum(names(x) == n) == length(n)){
+    print("Alle Spatenbezeichnungen und Spaltenanzahl richtig.")
+    }else{
+     print("Es sind NICHT alle Spaltenbezeichnungen bzw. Spaltenanzahl richtig.")
+    }
+  cat("\n")
+  r <- ifelse(names(x) == n ,"stimmt","stimmt nicht")
+  setNames(r,names(x))
+}
+```
+
+#Funktion, um zu überprüfen, ob Klasse der Elemente stimmt
+```{r}
+  Klasse <- function(x){
+    typ <- c("integer","character","Date","integer","integer","integer")
+    typ.x <- sapply(x,class)
+    if(sum(typ == typ.x) == length(typ)){
+      print("Datentypen sind alle richtig.")
+    }else{
+      print("Datentypen sind NICHT alle richtig.")
+    }
+    cat("\n")
+    
+    typ.truefalse <- ifelse(typ.x == typ ,"ja","nein")
+    cells <- c(typ.x,typ.truefalse)
+    col_names <- names(x)
+    row_names <- c("Datentyp","Übereinstimmung")
+    matrix(cells, nrow=2, ncol=ncol(x), byrow=TRUE, dimnames=list(row_names, col_names))
+  }
+```
+Funktion, um zu überprüfen, ob observations die richtige Stellenanzahl haben
+```{r , }
+# struktur <- function(x){
+#   standard <- sapply(T11,nchar)
+#   
+# }
+
 ```
 
 ##Einzelteile
@@ -63,7 +108,7 @@ Zunächst müssen die einzelnen Tabellen der Einzelteile importiert werden, wobe
 firstGlance(T11)
 NATest(T11)
 ```
-Keine Auffälligkeiten außer Datumsformat in Character
+Keine Auffälligkeiten außer, dass Produktionsdatum den Datentyp "character" hat -> Umwandlung zu Datumsformat
 ```{r}
 T11.new <- T11
 T11.new$Produktionsdatum <- as.Date(T11$Produktionsdatum, format = "%Y-%m-%d")
@@ -74,7 +119,7 @@ T11.new$Produktionsdatum <- as.Date(T11$Produktionsdatum, format = "%Y-%m-%d")
 firstGlance(T14)
 NATest(T14)
 ```
-Keine Auffälligkeiten außer Datumsformat in Character
+Keine Auffälligkeiten außer, dass Produktionsdatum den Datentyp "character" hat -> Umwandlung zu Datumsformat
 ```{r}
 T14.new <- T14
 T14.new$Produktionsdatum <- as.Date(T14$Produktionsdatum, format = "%Y-%m-%d")
@@ -85,11 +130,15 @@ T14.new$Produktionsdatum <- as.Date(T14$Produktionsdatum, format = "%Y-%m-%d")
 firstGlance(T15)
 NATest(T15)
 ```
-Falsches Datumsformat
+Falsches Datumsformat (character) und falscher Spaltenname (Wareneingangsdatum wird zu Produktionsdatum umbenannt)
 ```{r}
 T15.new <- T15
+
+#Umbennen der Spaltennamen
 names(T15.new) <- names(T14)
-T15.new$Produktionsdatum <-  as.Date(format(as.Date(T15.new$Produktionsdatum, format = "%d.%m.%Y"), "%Y-%m-%d"))
+
+#Ändern des Datentyps zu Datumsformat
+T15.new$Produktionsdatum <-  as.Date(as.Date(T15.new$Produktionsdatum, format = "%d.%m.%Y"), format = "%Y-%m-%d")
 ```
 
 ###T16
@@ -97,13 +146,17 @@ T15.new$Produktionsdatum <-  as.Date(format(as.Date(T15.new$Produktionsdatum, fo
 firstGlance(T16)
 NATest(T16)
 ```
-Falsches Datumsformat, mit Origin angegeben
+Falsches Datumsformat (double bei Produktionsdatum und character bei Origin) und zusätzliche Origin-Spalte, die in folgenden Schritten mit Produktionsdatum addiert und anschließend aufgelöst wird
 ```{r}
+#nur die ersten 6 Spalten auswählen und damit Origin-Spalte aussschließen
 T16.new <- T16 %>%
     select(1:6)
 
+#Produktionsdatum zum Datentyp "Tag" umwandeln und zu Origin-Datum aufaddieren
 T16.new$Produktionsdatum <- as.Date(T16.new$Produktionsdatum, format = "%d",origin = as.Date("1970-01-01", format="%Y-%m-%d"))
 T16.new <- select(T16.new,1:6)
+
+#neue Spaltenbenennung (X1 wird zu X)
 names(T16.new) <- names(T14)
 ```
 
@@ -111,10 +164,14 @@ names(T16.new) <- names(T14)
 ```{r}
 firstGlance(T19)
 ```
-Zeilen sind zum Teil nebeneinander gerutscht
+Zeilen sind zum Teil nebeneinander gerutscht - Spaltennamen existieren doppelt 
+-> Viele NA´s, die nun genauer zu untersuchen sind
 ```{r}
+#zuerst filtern wir aus der IDNummer-Spalte die NA´s heraus und gucken dann, ob ein weiteres filern in den anderen Spalten noch nötig ist
 T19.1 <- select(T19[!is.na(T19$IDNummer),],1:6) 
 T19.2 <- select(T19[!is.na(T19$IDNummer1),],7:12)
+
+#Umbennen der Spaltenamen von T19.2 zu Originalnamen
 names(T19.2) <- names(T19.1)
 ```
 Betrachtung der einzelnen Tabellen
@@ -124,24 +181,33 @@ NATest(T19.1)
 
 firstGlance(T19.2)
 NATest(T19.2)
-```
-IDNummern sind jeweils falsch
-```{r warning=FALSE}
-T19.2sep <- T19.2 %>%
-  separate(IDNummer, c("BT","Herst","Werk","X"), sep = c("-","-","-")) 
-T19.2sep$BT <- 19
-T19.2uni <- T19.2sep%>%
-  unite(col = IDNummer, BT, Herstellernummer, Werksnummer, X, sep = c("-","-","-"),remove = FALSE)%>%
-  select( X1,IDNummer,Produktionsdatum,Herstellernummer,Werksnummer,Fehlerhaft)
-  
 
-T19.1sep <- T19.1%>%
-  separate(IDNummer, c("BT","Rest"),sep = c("-"), extra = "merge")
-T19.1sep$BT <- 19
-T19.1uni <- T19.1sep%>%
-  unite(col = IDNummer, BT, Rest, sep = c("-"))%>%
+#kein weiteres Filern von NA´s mehr nötig, da keine weiteren NA´s gefunden
+```
+IDNummern sind jeweils falsch bzgl. der Zuordnung von Bauteil, Herstellnummer, Werksnummer und X
+```{r warning=FALSE}
+#IDNummer aufspalten, indem Hilfsspalten (BT, Herst, Werk, X) hinzugefügt werden, da alle Parameter in der IDNummer falsch sind
+T19.2sep <- T19.2 %>%
+  separate(IDNummer, c("BT","Herst","Werk","X"), sep = c("-","-","-"))
+
+#Zuweisung BT - es handelt sich um das Bauteil 19
+T19.2sep$BT <- 19 
+
+#richtiges Zusammenfassen der einzelnen Spalten (unit) und anschließendes Ausschließen der Hilfsspalten (select)
+T19.2uni <- T19.2sep%>%
+  unite(IDNummer, BT, Herstellernummer, Werksnummer, X, sep = c("-","-","-"),remove = FALSE)%>%
   select(X1,IDNummer,Produktionsdatum,Herstellernummer,Werksnummer,Fehlerhaft)
   
+#nur die Bauteilnummer ist falsch, deswegen wird die IDNummer nur in BT und Rest aufgesplittet
+#weitere Schritte sind äquivalent zu T19.2
+T19.1sep <- T19.1%>%
+  separate(IDNummer, c("BT","Rest"),sep = "-", extra = "merge")
+T19.1sep$BT <- 19
+T19.1uni <- T19.1sep%>%
+  unite(col = IDNummer, BT, Rest, sep = "-")%>%
+  select(X1,IDNummer,Produktionsdatum,Herstellernummer,Werksnummer,Fehlerhaft)
+  
+#Zusammenfassen von T19.1uni und T19.2uni
 T19.new <- arrange(bind_rows(T19.1uni,T19.2uni),X1)
 names(T19.new) <- names(T14)
 ```
@@ -151,35 +217,50 @@ names(T19.new) <- names(T14)
 firstGlance(T20)
 NATest(T20)
 ```
-Falsches Datumsformat und NA's
+Falsches Datumsformat (character) und NA's
 ```{r}
-T20.new <- T20
-T20.new$Produktionsdatum <-  as.Date(format(as.Date(T20$Produktionsdatum, format = "%d.%m.%Y"), "%Y-%m-%d"))
+
+#IDNummer nicht immer korrekt bzgl. der X-Nummer
+T20.sep <- T20%>%
+  separate(IDNummer, c("Anfang","X1"),sep = "(?=[^-]+$)", extra = "merge")
+
+T20.uni <- T20.sep%>%
+  unite(IDNummer,Anfang,X, sep = "", remove = FALSE)%>%
+  select(X,IDNummer,Produktionsdatum,Herstellernummer,Werksnummer,Fehlerhaft)
+
+T20.new <- T20.uni
+T20.new$Produktionsdatum <-  as.Date(as.Date(T20.uni$Produktionsdatum, format = "%d.%m.%Y", "%Y-%m-%d"))
 
 T20.new$Fehlerhaft[T20$IDNummer == "20-209-2091-96178"] <- 1
-T20.new$X[T20$IDNummer == "20-209-2091-96178"] <- 163764
+T20.new$X[T20$IDNummer == "20-209-2091-96178"] <- 211
 T20.new$Herstellernummer[T20$X == 699] <- 211
-T20.new$Werksnummer[T20$X == 129019] <- 2111
+T20.new$Werksnummer[T20.new$X == 129019] <- 2111
 ```
 
 ###Fehlerhafte Teile
 
 ```{r}
+#fehlerhafte Teile filtern und entsprechende(s) IDNummer und Produktionsdatum speichern
 T11F <- T11.new %>%
   filter(Fehlerhaft == 1)%>%
   select(2:3)
+
 T14F <- T14.new %>%
  filter(Fehlerhaft == 1)%>%
   select(2:3)
+
 T15F <- T15.new %>%
  filter(Fehlerhaft == 1)%>%
   select(2:3)
+
 T16F <- T16.new %>%
   filter(Fehlerhaft == 1) %>%
   select(2:3)
+
 T19F <- T19.new %>%
   filter(Fehlerhaft == 1) %>%
   select(2:3)
+
 T20F <- T20.new %>%
   filter(Fehlerhaft == 1) %>%
   select(2:3)
@@ -192,8 +273,10 @@ names(T16F) <- c("ID_T16","T16_Datum")
 names(T19F) <- c("ID_T19","T19_Datum")
 names(T20F) <- c("ID_T20","T20_Datum")
 ```
-Auffälligkeiten
+Auffälligkeiten - Fehlerhäufigkeiten
 ```{r}
+#Wie viele Fehler je Einzelteiltyp? 
+#Zeilen zählen der fehlerhaften Einzelteiltypen
 nrow(T11F)
 nrow(T14F)
 nrow(T15F)
