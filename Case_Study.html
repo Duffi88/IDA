@@ -860,6 +860,132 @@ K2LE2 &lt;- read.csv2(path.K2LE2, stringsAsFactors = FALSE)</code></pre>
 ## 477051        1111          0
 ## 477052        1111          0</code></pre>
 <p>IDNummer Fehlerhaft</p>
+<pre class="r"><code>K2LE2.sep &lt;- K2LE2%&gt;%
+  separate(IDNummer, c(&quot;KK&quot;,&quot;Rest&quot;),sep = c(&quot;-&quot;), extra = &quot;merge&quot;)
+K2LE2.sep$KK &lt;- &quot;K2LE2&quot;
+K2LE2.new &lt;- unite(K2LE2.sep,col = IDNummer, KK, Rest, sep = c(&quot;-&quot;))</code></pre>
+<pre class="r"><code>#K(omponente K2LE)1 J(oined with T)X
+
+K1J11 &lt;- select(K2LE1B,2,5)%&gt;%
+  inner_join(T11F,by = &quot;ID_T11&quot;)
+K1J14 &lt;- select(K2LE1B,3,5)%&gt;%
+  inner_join(T14F,by = &quot;ID_T14&quot;)
+K1J15 &lt;- select(K2LE1B,4,5)%&gt;%
+  inner_join(T15F,by = &quot;ID_T15&quot;)
+K2J16 &lt;- select(K2LE2B,3,6)%&gt;%
+  inner_join(T16F,by = &quot;ID_T16&quot;)
+K2J19 &lt;- select(K2LE2B,4,6)%&gt;%
+  inner_join(T19F,by = &quot;ID_T19&quot;)
+K2J20 &lt;- select(K2LE2B,5,6)%&gt;%
+  inner_join(T20F,by = &quot;ID_T20&quot;)
+
+#Komponente Full Join
+K1JF &lt;- full_join(K1J11,K1J14, by = &quot;ID_K2LE1&quot;)%&gt;%
+  full_join(K1J15, by = &quot;ID_K2LE1&quot;)%&gt;%
+  full_join(K2LE1[K2LE1$Fehlerhaft == 1,2:3], by = c(&quot;ID_K2LE1&quot;=&quot;IDNummer&quot;))
+
+K2JF &lt;- full_join(K2J16,K2J19, by = &quot;ID_K2LE2&quot;)%&gt;%
+  full_join(K2J20, by = &quot;ID_K2LE2&quot;)%&gt;%
+  full_join(K2LE2.new[K2LE2.new$Fehlerhaft == 1,2:3], by = c(&quot;ID_K2LE2&quot;=&quot;IDNummer&quot;))
+
+KJF &lt;- full_join(K2JF,K1JF,by = c(&quot;ID_K2LE2&quot; = &quot;ID_K2LE1&quot;))
+
+head(KJF)</code></pre>
+<pre><code>##               ID_T16             ID_K2LE2  T16_Datum           ID_T19
+## 1  16-215-2152-28093 K2LE2-111-1111-22912 2009-12-13             &lt;NA&gt;
+## 2  16-213-2132-27863 K2LE2-111-1111-28306 2010-03-19             &lt;NA&gt;
+## 3 16-215-2151-171984 K2LE2-109-1091-41403 2015-07-30             &lt;NA&gt;
+## 4 16-213-2132-146554 K2LE2-109-1091-50482 2016-01-07             &lt;NA&gt;
+## 5 16-215-2152-200862 K2LE2-109-1091-64745 2016-09-15             &lt;NA&gt;
+## 6               &lt;NA&gt;  K2LE2-111-1111-5581       &lt;NA&gt; 19-215-2154-3808
+##    T19_Datum            ID_T20  T20_Datum Produktionsdatum.x ID_T11
+## 1       &lt;NA&gt; 20-209-2091-13283 2009-12-14               &lt;NA&gt;   &lt;NA&gt;
+## 2       &lt;NA&gt;              &lt;NA&gt;       &lt;NA&gt;               &lt;NA&gt;   &lt;NA&gt;
+## 3       &lt;NA&gt; 20-211-2111-53918 2015-07-24               &lt;NA&gt;   &lt;NA&gt;
+## 4       &lt;NA&gt; 20-209-2091-86135 2015-12-31               &lt;NA&gt;   &lt;NA&gt;
+## 5       &lt;NA&gt;              &lt;NA&gt;       &lt;NA&gt;               &lt;NA&gt;   &lt;NA&gt;
+## 6 2008-11-21              &lt;NA&gt;       &lt;NA&gt;               &lt;NA&gt;   &lt;NA&gt;
+##   T11_Datum ID_T14 T14_Datum ID_T15 T15_Datum Produktionsdatum.y
+## 1      &lt;NA&gt;   &lt;NA&gt;      &lt;NA&gt;   &lt;NA&gt;      &lt;NA&gt;               &lt;NA&gt;
+## 2      &lt;NA&gt;   &lt;NA&gt;      &lt;NA&gt;   &lt;NA&gt;      &lt;NA&gt;               &lt;NA&gt;
+## 3      &lt;NA&gt;   &lt;NA&gt;      &lt;NA&gt;   &lt;NA&gt;      &lt;NA&gt;               &lt;NA&gt;
+## 4      &lt;NA&gt;   &lt;NA&gt;      &lt;NA&gt;   &lt;NA&gt;      &lt;NA&gt;               &lt;NA&gt;
+## 5      &lt;NA&gt;   &lt;NA&gt;      &lt;NA&gt;   &lt;NA&gt;      &lt;NA&gt;               &lt;NA&gt;
+## 6      &lt;NA&gt;   &lt;NA&gt;      &lt;NA&gt;   &lt;NA&gt;      &lt;NA&gt;               &lt;NA&gt;</code></pre>
+</div>
+<div id="fahrzeuge" class="section level2">
+<h2>Fahrzeuge</h2>
+<pre class="r"><code>path.OEM11B &lt;- &quot;Bestandteile_Fahrzeuge_OEM1_Typ11.csv&quot; 
+path.OEM12B &lt;- &quot;Bestandteile_Fahrzeuge_OEM1_Typ12.csv&quot; 
+path.OEM21B &lt;- &quot;Bestandteile_Fahrzeuge_OEM2_Typ21.csv&quot; 
+path.OEM22B &lt;- &quot;Bestandteile_Fahrzeuge_OEM2_Typ22.csv&quot; 
+path.OEM11 &lt;- &quot;Fahrzeuge_OEM1_Typ11.csv&quot; 
+path.OEM12 &lt;- &quot;Fahrzeuge_OEM1_Typ12.csv&quot; 
+path.OEM21 &lt;- &quot;Fahrzeuge_OEM2_Typ21.csv&quot; 
+path.OEM22 &lt;- &quot;Fahrzeuge_OEM2_Typ22.csv&quot; 
+
+OEM11B &lt;- read.csv2(path.OEM11B, stringsAsFactors = FALSE)
+OEM12B &lt;- read.csv2(path.OEM12B, stringsAsFactors = FALSE)
+OEM21B &lt;- read.csv2(path.OEM21B, stringsAsFactors = FALSE)
+OEM22B &lt;- read.csv2(path.OEM22B, stringsAsFactors = FALSE)
+OEM11 &lt;- read.csv2(path.OEM11, stringsAsFactors = FALSE)
+OEM12 &lt;- read.csv2(path.OEM12, stringsAsFactors = FALSE)
+OEM21 &lt;- read.csv2(path.OEM21, stringsAsFactors = FALSE)
+OEM22 &lt;- read.csv2(path.OEM22, stringsAsFactors = FALSE)</code></pre>
+<p>Fahrzeuge mit kritischen Komponenten</p>
+<pre class="r"><code>OEM11BF &lt;- inner_join(OEM11B,KJF, by = c(&quot;ID_Sitze&quot; = &quot;ID_K2LE2&quot;))%&gt;%
+  select(4,6)
+
+OEM12BF &lt;- inner_join(OEM12B,KJF, by = c(&quot;ID_Sitze&quot; = &quot;ID_K2LE2&quot;))%&gt;%
+  select(4,6)
+
+OEM21BF &lt;- inner_join(OEM21B,KJF, by = c(&quot;ID_Sitze&quot; = &quot;ID_K2LE2&quot;))%&gt;%
+  select(5,7)
+
+OEM22BF &lt;- inner_join(OEM22B,KJF, by = c(&quot;ID_Sitze&quot; = &quot;ID_K2LE2&quot;))%&gt;%
+  select(5,7)
+
+
+OEMF &lt;- full_join(OEM11BF,OEM12BF)%&gt;%
+  full_join(OEM21BF)%&gt;%
+  full_join(OEM22BF)
+
+head(OEMF)</code></pre>
+<pre><code>##               ID_Sitze    ID_Fahrzeug
+## 1  K2LE1-109-1091-7676  11-1-12-11043
+## 2 K2LE1-109-1091-18002  11-1-11-46275
+## 3 K2LE1-109-1091-37100  11-1-11-92198
+## 4 K2LE1-109-1091-46188  11-1-12-75191
+## 5 K2LE1-109-1091-46993  11-1-12-76177
+## 6 K2LE1-109-1091-65366 11-1-12-106387</code></pre>
+</div>
+<div id="zulassung-geodaten" class="section level2">
+<h2>Zulassung &amp; Geodaten</h2>
+<pre class="r"><code>Zul_aller &lt;- read.csv2(&quot;Zulassungen_alle_Fahrzeuge.csv&quot;, stringsAsFactors = FALSE)
+Geo &lt;- read.csv2(&quot;Geodaten_Gemeinden.csv&quot;, stringsAsFactors = FALSE)
+Geo.new &lt;- Geo%&gt;%
+  select(3:6)
+Zul_aller.new &lt;- Zul_aller%&gt;%
+  select(2:4)
+
+GesTab &lt;- left_join(OEMF,Zul_aller.new, by =c(&quot;ID_Fahrzeug&quot; = &quot;IDNummer&quot;))%&gt;%
+  left_join(Geo.new, by = c(&quot;Gemeinden&quot; = &quot;Gemeinde&quot;))
+
+head(GesTab)</code></pre>
+<pre><code>##               ID_Sitze    ID_Fahrzeug  Gemeinden  Zulassung Postleitzahl
+## 1  K2LE1-109-1091-7676  11-1-12-11043   GERNRODE 2009-03-02        37339
+## 2 K2LE1-109-1091-18002  11-1-11-46275 STAHNSDORF 2009-04-15        14532
+## 3 K2LE1-109-1091-37100  11-1-11-92198 INGOLSTADT 2009-07-27        85049
+## 4 K2LE1-109-1091-46188  11-1-12-75191    DOEBERN 2009-10-02         3159
+## 5 K2LE1-109-1091-46993  11-1-12-76177   ERLANGEN 2009-10-08        91052
+## 6 K2LE1-109-1091-65366 11-1-12-106387      MAINZ 2010-03-24        55116
+##   Längengrad Breitengrad
+## 1  10.400524    51.39505
+## 2  13.216273    52.39169
+## 3  11.423387    48.76542
+## 4  14.597678    51.61465
+## 5  11.004980    49.59513
+## 6   8.271855    50.00196</code></pre>
 </div>
 
 

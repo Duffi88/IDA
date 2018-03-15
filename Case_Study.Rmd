@@ -3,7 +3,7 @@ title: "Case_Study"
 output: html_document
 ---
 
-```{r ,include=FALSE}
+```{r Packages, ,include=FALSE}
 #Alle Packages
 library(tidyverse)
 library(lubridate)
@@ -17,7 +17,7 @@ Um heraus zu finden, welche Fahrzeuge kritisch sind, müssen sowohl die fehlerha
 ##Funktionen
 
 ###Funktion für Überblick über Dataframes
-```{r}
+```{r Funktion: First Glance}
   firstGlance <- function(x){
     print(summary(x))
     cat("\n")
@@ -30,7 +30,7 @@ Um heraus zu finden, welche Fahrzeuge kritisch sind, müssen sowohl die fehlerha
 ```
 ###Funktion für NA Überprüfung
 
-```{r}
+```{r Funktion: NATest}
   NATest <- function(x){
     #print(summarize(group_by(x, Herstellernummer)))
     #print(summarize(group_by(x, Werksnummer)))
@@ -49,7 +49,7 @@ Um heraus zu finden, welche Fahrzeuge kritisch sind, müssen sowohl die fehlerha
 ##Einzelteile
 
 Zunächst müssen die einzelnen Tabellen der Einzelteile importiert werden, wobei auf die Zeilen und Reihentrennung(Komma o. Semikolon) zu achten ist.
-```{r , }
+```{r Import: Einzelteil}
   T11 <- read.csv2("Einzelteil_T11.csv", stringsAsFactors = FALSE)
   T14 <- read.csv2("Einzelteil_T14.csv", stringsAsFactors = FALSE)
   T15 <- read.csv2("Einzelteil_T15.csv", stringsAsFactors = FALSE)
@@ -271,3 +271,102 @@ firstGlance(K2LE2)
 ```
 IDNummer Fehlerhaft          
 
+```{r}
+K2LE2.sep <- K2LE2%>%
+  separate(IDNummer, c("KK","Rest"),sep = c("-"), extra = "merge")
+K2LE2.sep$KK <- "K2LE2"
+K2LE2.new <- unite(K2LE2.sep,col = IDNummer, KK, Rest, sep = c("-"))
+
+```
+```{r}
+#K(omponente K2LE)1 J(oined with T)X
+
+K1J11 <- select(K2LE1B,2,5)%>%
+  inner_join(T11F,by = "ID_T11")
+K1J14 <- select(K2LE1B,3,5)%>%
+  inner_join(T14F,by = "ID_T14")
+K1J15 <- select(K2LE1B,4,5)%>%
+  inner_join(T15F,by = "ID_T15")
+K2J16 <- select(K2LE2B,3,6)%>%
+  inner_join(T16F,by = "ID_T16")
+K2J19 <- select(K2LE2B,4,6)%>%
+  inner_join(T19F,by = "ID_T19")
+K2J20 <- select(K2LE2B,5,6)%>%
+  inner_join(T20F,by = "ID_T20")
+
+#Komponente Full Join
+K1JF <- full_join(K1J11,K1J14, by = "ID_K2LE1")%>%
+  full_join(K1J15, by = "ID_K2LE1")%>%
+  full_join(K2LE1[K2LE1$Fehlerhaft == 1,2:3], by = c("ID_K2LE1"="IDNummer"))
+
+K2JF <- full_join(K2J16,K2J19, by = "ID_K2LE2")%>%
+  full_join(K2J20, by = "ID_K2LE2")%>%
+  full_join(K2LE2.new[K2LE2.new$Fehlerhaft == 1,2:3], by = c("ID_K2LE2"="IDNummer"))
+
+KJF <- full_join(K2JF,K1JF,by = c("ID_K2LE2" = "ID_K2LE1"))
+
+head(KJF)
+```
+
+##Fahrzeuge
+
+```{r}
+
+path.OEM11B <- "Bestandteile_Fahrzeuge_OEM1_Typ11.csv" 
+path.OEM12B <- "Bestandteile_Fahrzeuge_OEM1_Typ12.csv" 
+path.OEM21B <- "Bestandteile_Fahrzeuge_OEM2_Typ21.csv" 
+path.OEM22B <- "Bestandteile_Fahrzeuge_OEM2_Typ22.csv" 
+path.OEM11 <- "Fahrzeuge_OEM1_Typ11.csv" 
+path.OEM12 <- "Fahrzeuge_OEM1_Typ12.csv" 
+path.OEM21 <- "Fahrzeuge_OEM2_Typ21.csv" 
+path.OEM22 <- "Fahrzeuge_OEM2_Typ22.csv" 
+
+OEM11B <- read.csv2(path.OEM11B, stringsAsFactors = FALSE)
+OEM12B <- read.csv2(path.OEM12B, stringsAsFactors = FALSE)
+OEM21B <- read.csv2(path.OEM21B, stringsAsFactors = FALSE)
+OEM22B <- read.csv2(path.OEM22B, stringsAsFactors = FALSE)
+OEM11 <- read.csv2(path.OEM11, stringsAsFactors = FALSE)
+OEM12 <- read.csv2(path.OEM12, stringsAsFactors = FALSE)
+OEM21 <- read.csv2(path.OEM21, stringsAsFactors = FALSE)
+OEM22 <- read.csv2(path.OEM22, stringsAsFactors = FALSE)
+
+```
+
+Fahrzeuge mit kritischen Komponenten
+
+```{r message=FALSE, warning=FALSE}
+OEM11BF <- inner_join(OEM11B,KJF, by = c("ID_Sitze" = "ID_K2LE2"))%>%
+  select(4,6)
+
+OEM12BF <- inner_join(OEM12B,KJF, by = c("ID_Sitze" = "ID_K2LE2"))%>%
+  select(4,6)
+
+OEM21BF <- inner_join(OEM21B,KJF, by = c("ID_Sitze" = "ID_K2LE2"))%>%
+  select(5,7)
+
+OEM22BF <- inner_join(OEM22B,KJF, by = c("ID_Sitze" = "ID_K2LE2"))%>%
+  select(5,7)
+
+
+OEMF <- full_join(OEM11BF,OEM12BF)%>%
+  full_join(OEM21BF)%>%
+  full_join(OEM22BF)
+
+head(OEMF)
+```
+
+##Zulassung & Geodaten
+
+```{r}
+Zul_aller <- read.csv2("Zulassungen_alle_Fahrzeuge.csv", stringsAsFactors = FALSE)
+Geo <- read.csv2("Geodaten_Gemeinden.csv", stringsAsFactors = FALSE)
+Geo.new <- Geo%>%
+  select(3:6)
+Zul_aller.new <- Zul_aller%>%
+  select(2:4)
+
+GesTab <- left_join(OEMF,Zul_aller.new, by =c("ID_Fahrzeug" = "IDNummer"))%>%
+  left_join(Geo.new, by = c("Gemeinden" = "Gemeinde"))
+
+head(GesTab)
+```
