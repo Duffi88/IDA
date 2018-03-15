@@ -9,6 +9,9 @@ library(tidyverse)
 library(lubridate)
 library(dplyr)
 library(ggplot2)
+library(scales)
+library(ggthemes)
+library(RColorBrewer)
 ```
 ##Einführung
 
@@ -65,8 +68,9 @@ NATest(T11)
 ```
 Keine Auffälligkeiten außer Datumsformat in Character
 ```{r}
-T11.new <- T11
-T11.new$Produktionsdatum <- as.Date(T11$Produktionsdatum, format = "%Y-%m-%d")
+  T11.new <- T11%>%
+    select(2:6)
+  T11.new$Produktionsdatum <- as.Date(T11$Produktionsdatum, format = "%Y-%m-%d")
 ```
 
 ###T14
@@ -76,7 +80,8 @@ NATest(T14)
 ```
 Keine Auffälligkeiten außer Datumsformat in Character
 ```{r}
-T14.new <- T14
+ T14.new <- T14%>%
+    select(2:6)
 T14.new$Produktionsdatum <- as.Date(T14$Produktionsdatum, format = "%Y-%m-%d")
 ```
 
@@ -87,9 +92,9 @@ NATest(T15)
 ```
 Falsches Datumsformat
 ```{r}
-T15.new <- T15
-names(T15.new) <- names(T14)
-T15.new$Produktionsdatum <-  as.Date(format(as.Date(T15.new$Produktionsdatum, format = "%d.%m.%Y"), "%Y-%m-%d"))
+  T15.new <- T15%>%
+    select(2:6)
+  T15.new$Wareneingangsdatum <-  as.Date(format(as.Date(T15.new$Wareneingangsdatum, format = "%d.%m.%Y"), "%Y-%m-%d"))
 ```
 
 ###T16
@@ -99,12 +104,9 @@ NATest(T16)
 ```
 Falsches Datumsformat, mit Origin angegeben
 ```{r}
-T16.new <- T16 %>%
-    select(1:6)
-
-T16.new$Produktionsdatum <- as.Date(T16.new$Produktionsdatum, format = "%d",origin = as.Date("1970-01-01", format="%Y-%m-%d"))
-T16.new <- select(T16.new,1:6)
-names(T16.new) <- names(T14)
+  T16.new <- T16 %>%
+    select(2:6)
+  T16.new$Produktionsdatum <- as.Date(T16.new$Produktionsdatum, format = "%d",origin = as.Date("1970-01-01", format="%Y-%m-%d"))
 ```
 
 ###T19
@@ -142,8 +144,8 @@ T19.1uni <- T19.1sep%>%
   unite(col = IDNummer, BT, Rest, sep = c("-"))%>%
   select(X1,IDNummer,Produktionsdatum,Herstellernummer,Werksnummer,Fehlerhaft)
   
-T19.new <- arrange(bind_rows(T19.1uni,T19.2uni),X1)
-names(T19.new) <- names(T14)
+T19.new <- arrange(bind_rows(T19.1uni,T19.2uni),X1)%>%
+    select(2:6)
 ```
 
 ###T20
@@ -153,45 +155,49 @@ NATest(T20)
 ```
 Falsches Datumsformat und NA's
 ```{r}
-T20.new <- T20
-T20.new$Produktionsdatum <-  as.Date(format(as.Date(T20$Produktionsdatum, format = "%d.%m.%Y"), "%Y-%m-%d"))
+  T20.new <- T20%>%
+    select(2:6)
+  T20.new$Produktionsdatum <-  as.Date(format(as.Date(T20$Produktionsdatum, format = "%d.%m.%Y"), "%Y-%m-%d"))
+  
 
 T20.new$Fehlerhaft[T20$IDNummer == "20-209-2091-96178"] <- 1
-T20.new$X[T20$IDNummer == "20-209-2091-96178"] <- 163764
-T20.new$Herstellernummer[T20$X == 699] <- 211
-T20.new$Werksnummer[T20$X == 129019] <- 2111
+T20.new$Herstellernummer[T20$IDNummer == "20-211-2111-271"] <- 211
+T20.new$Werksnummer[T20$IDNummer == "20-211-2111-49809"] <- 2111
+
+  #Namen an Komponenten Tabelle anpassen
+  names(T11.new) <- paste0("T11_",names(T11.new))
+  names(T14.new) <- paste0("T14_",names(T14.new))
+  names(T15.new) <- paste0("T15_",names(T15.new))
+  names(T16.new) <- paste0("T16_",names(T16.new))
+  names(T19.new) <- paste0("T19_",names(T19.new))
+  names(T20.new) <- paste0("T20_",names(T20.new))
 ```
+
+
 
 ###Fehlerhafte Teile
 
 ```{r}
-T11F <- T11.new %>%
-  filter(Fehlerhaft == 1)%>%
-  select(2:3)
-T14F <- T14.new %>%
- filter(Fehlerhaft == 1)%>%
-  select(2:3)
-T15F <- T15.new %>%
- filter(Fehlerhaft == 1)%>%
-  select(2:3)
-T16F <- T16.new %>%
-  filter(Fehlerhaft == 1) %>%
-  select(2:3)
-T19F <- T19.new %>%
-  filter(Fehlerhaft == 1) %>%
-  select(2:3)
-T20F <- T20.new %>%
-  filter(Fehlerhaft == 1) %>%
-  select(2:3)
+  T11F <- T11.new %>%
+    filter(T11_Fehlerhaft == 1)%>%
+    select(1:4)
+  T14F <- T14.new %>%
+   filter(T14_Fehlerhaft == 1)%>%
+    select(1:4)
+  T15F <- T15.new %>%
+   filter(T15_Fehlerhaft == 1)%>%
+    select(1:4)
+  T16F <- T16.new %>%
+    filter(T16_Fehlerhaft == 1)%>%
+    select(1:4)
+  T19F <- T19.new %>%
+    filter(T19_Fehlerhaft == 1)%>%
+    select(1:4)
+  T20F <- T20.new %>%
+    filter(T20_Fehlerhaft == 1)%>%
+    select(1:4)
 ```
-```{r include=FALSE}
-names(T11F) <- c("ID_T11","T11_Datum")
-names(T14F) <- c("ID_T14","T14_Datum")
-names(T15F) <- c("ID_T15","T15_Datum")
-names(T16F) <- c("ID_T16","T16_Datum")
-names(T19F) <- c("ID_T19","T19_Datum")
-names(T20F) <- c("ID_T20","T20_Datum")
-```
+
 Auffälligkeiten
 ```{r}
 nrow(T11F)
@@ -204,48 +210,46 @@ nrow(T20F)
 Bei T15 und T20 sehr viele fehlerhafte Teile
 
 ```{r}
-T15G <- aggregate(T15.new$Fehlerhaft, by=list(Produktionsdatum=T15.new$Produktionsdatum), FUN=sum)
-T20G <- aggregate(T20.new$Fehlerhaft, by=list(Produktionsdatum=T20.new$Produktionsdatum), FUN=sum)
 
-T15GC <- count(T15.new,Produktionsdatum)
-T15FC <- count(T15F,T15_Datum)
-T15CC <- left_join(T15GC,T15FC, by = c("Produktionsdatum" = "T15_Datum" ))
+T15GC <- count(T15.new,T15_Wareneingangsdatum)
+T15FC <- count(T15F,T15_Wareneingangsdatum)
+T15CC <- left_join(T15GC,T15FC, by = "T15_Wareneingangsdatum")
 T15CC[is.na(T15CC[,3]),3] <- 0
 
 #Plot um Fehlerverlauf zu zeigen
-ggplot(T15CC, aes(x = Produktionsdatum))+
+ggplot(T15CC, aes(x = T15_Wareneingangsdatum))+
   geom_bar(stat = "identity",aes(y = n.x, col = "red", fill = "red"))+
   geom_bar(stat = "identity",aes(y = n.y, col = "blue", fill = "blue"))+
   scale_fill_discrete(name = "T15 Lieferung", labels = c("Fehlerhaft","Fehlerfrei"))+
   guides(color = FALSE)
 
-T20GC <- count(T20.new,Produktionsdatum)
-T20FC <- count(T20F,T20_Datum)
-T20CC <- left_join(T20GC,T20FC, by = c("Produktionsdatum" = "T20_Datum" ))
+T20GC <- count(T20.new,T20_Produktionsdatum)
+T20FC <- count(T20F,T20_Produktionsdatum)
+T20CC <- left_join(T20GC,T20FC, by = "T20_Produktionsdatum")
 T20CC[is.na(T20CC[,3]),3] <- 0
 
 #Plot um Fehlerverlauf zu zeigen
-ggplot(T20CC, aes(x = Produktionsdatum))+
+ggplot(T20CC, aes(x = T20_Produktionsdatum))+
   geom_bar(stat = "identity",aes(y = n.x, col = "red", fill = "red"))+
   geom_bar(stat = "identity",aes(y = n.y, col = "blue", fill = "blue"))+
   scale_fill_discrete(name = "T20 Produktion", labels = c("Fehlerhaft","Fehlerfrei"))+
   guides(color = FALSE)
 
 #Fehleranteile der Werke
-ggplot(T15.new, aes(x = as.factor(Werksnummer), fill = as.factor(Fehlerhaft)))+
-  geom_bar(position = "fill")+
-  scale_fill_manual(name = "Fehlerhaft",values = c("#00BFC4","#F8766D"))+
-  ggtitle("Prozentualer Anteil Fehlerhafter Teile pro Werk - T 15")+
-  xlab("Werksnummer")+
-  ylab("Prozent. Anteil")
+#ggplot(T15.new, aes(x = as.factor(Werksnummer), fill = as.factor(Fehlerhaft)))+
+#  geom_bar(position = "fill")+
+#  scale_fill_manual(name = "Fehlerhaft",values = c("#00BFC4","#F8766D"))+
+#  ggtitle("Prozentualer Anteil Fehlerhafter Teile pro Werk - T 15")+
+#  xlab("Werksnummer")+
+#  ylab("Prozent. Anteil")
 
 #Fehleranteile der Werke
-ggplot(T20.new, aes(x = as.factor(Werksnummer), fill = as.factor(Fehlerhaft)))+
-  geom_bar(position = "fill")+
-  scale_fill_manual(name = "Fehlerhaft",values = c("#00BFC4","#F8766D"))+
-  ggtitle("Prozentualer Anteil Fehlerhafter Teile pro Werk - T 20")+
-  xlab("Werksnummer")+
-  ylab("Prozent. Anteil")
+#ggplot(T20.new, aes(x = as.factor(Werksnummer), fill = as.factor(Fehlerhaft)))+
+#  geom_bar(position = "fill")+
+#  scale_fill_manual(name = "Fehlerhaft",values = c("#00BFC4","#F8766D"))+
+#  ggtitle("Prozentualer Anteil Fehlerhafter Teile pro Werk - T 20")+
+#  xlab("Werksnummer")+
+#  ylab("Prozent. Anteil")
 
 
 ```
@@ -278,34 +282,57 @@ K2LE2.sep$KK <- "K2LE2"
 K2LE2.new <- unite(K2LE2.sep,col = IDNummer, KK, Rest, sep = c("-"))
 
 ```
-```{r}
+```{r message=FALSE, warning=FALSE}
 #K(omponente K2LE)1 J(oined with T)X
 
-K1J11 <- select(K2LE1B,2,5)%>%
-  inner_join(T11F,by = "ID_T11")
-K1J14 <- select(K2LE1B,3,5)%>%
-  inner_join(T14F,by = "ID_T14")
-K1J15 <- select(K2LE1B,4,5)%>%
-  inner_join(T15F,by = "ID_T15")
-K2J16 <- select(K2LE2B,3,6)%>%
-  inner_join(T16F,by = "ID_T16")
-K2J19 <- select(K2LE2B,4,6)%>%
-  inner_join(T19F,by = "ID_T19")
-K2J20 <- select(K2LE2B,5,6)%>%
-  inner_join(T20F,by = "ID_T20")
+K1J11 <- select(K2LE1B,2:5)%>%
+  inner_join(T11F,by = c("ID_T11" = "T11_IDNummer"))%>%
+  left_join(select(T14.new,1:4), by= c("ID_T14" = "T14_IDNummer"))%>%
+  left_join(select(T15.new,1:4), by= c("ID_T15" = "T15_IDNummer"))
 
-#Komponente Full Join
-K1JF <- full_join(K1J11,K1J14, by = "ID_K2LE1")%>%
-  full_join(K1J15, by = "ID_K2LE1")%>%
-  full_join(K2LE1[K2LE1$Fehlerhaft == 1,2:3], by = c("ID_K2LE1"="IDNummer"))
+K1J14 <- select(K2LE1B,2:5)%>%
+  inner_join(T14F,by = c("ID_T14"= "T14_IDNummer"))%>%
+  left_join(select(T11.new,1:4), by= c("ID_T11" = "T11_IDNummer"))%>%
+  left_join(select(T15.new,1:4), by= c("ID_T15" = "T15_IDNummer"))
 
-K2JF <- full_join(K2J16,K2J19, by = "ID_K2LE2")%>%
-  full_join(K2J20, by = "ID_K2LE2")%>%
-  full_join(K2LE2.new[K2LE2.new$Fehlerhaft == 1,2:3], by = c("ID_K2LE2"="IDNummer"))
+K1J15 <- select(K2LE1B,2:5)%>%
+  inner_join(T15F,by = c("ID_T15"= "T15_IDNummer"))%>%
+  left_join(select(T14.new,1:4), by= c("ID_T14" = "T14_IDNummer"))%>%
+  left_join(select(T11.new,1:4), by= c("ID_T11" = "T11_IDNummer"))
 
-KJF <- full_join(K2JF,K1JF,by = c("ID_K2LE2" = "ID_K2LE1"))
+K2J16 <- select(K2LE2B,3:6)%>%
+  inner_join(T16F,by = c("ID_T16"= "T16_IDNummer"))%>%
+  left_join(select(T19.new,1:4), by= c("ID_T19" = "T19_IDNummer"))%>%
+  left_join(select(T20.new,1:4), by= c("ID_T20" = "T20_IDNummer"))
 
-head(KJF)
+K2J19 <- select(K2LE2B,3:6)%>%
+  inner_join(T19F,by = c("ID_T19"= "T19_IDNummer"))%>%
+  left_join(select(T16.new,1:4), by= c("ID_T16" = "T16_IDNummer"))%>%
+  left_join(select(T20.new,1:4), by= c("ID_T20" = "T20_IDNummer"))
+
+K2J20 <- select(K2LE2B,3:6)%>%
+  inner_join(T20F,by = c("ID_T20"= "T20_IDNummer"))%>%
+  left_join(select(T19.new,1:4), by= c("ID_T19" = "T19_IDNummer"))%>%
+  left_join(select(T16.new,1:4), by= c("ID_T16" = "T16_IDNummer"))
+
+#Komponente Full Join mit Einzelteilen
+K1JF <- full_join(K1J11,K1J14)%>%
+  full_join(K1J15)
+
+K2JF <- full_join(K2J16,K2J19)%>%
+  full_join(K2J20)
+
+#Auswählen der kritischen Komponenten + Eigenschaften
+
+K1Krit <- left_join(select(K1JF,4),select(K2LE1,2:5), by = c("ID_K2LE1" = "IDNummer"))%>%
+  full_join(K2LE1[K2LE1$Fehlerhaft == 1,2:5],by = c("ID_K2LE1" = "IDNummer","Produktionsdatum", "Herstellernummer", "Werksnummer"))
+
+K2Krit <- left_join(select(K2JF,4),select(K2LE2.new,2:5), by = c("ID_K2LE2" = "IDNummer"))%>%
+  full_join(K2LE2.new[K2LE2.new$Fehlerhaft == 1,2:5],by = c("ID_K2LE2" = "IDNummer","Produktionsdatum", "Herstellernummer", "Werksnummer"))
+
+KKrit <- full_join(K1Krit,K2Krit, by = c("ID_K2LE1" = "ID_K2LE2","Produktionsdatum", "Herstellernummer", "Werksnummer"))
+
+names(KKrit) <- c("Komponente_ID",paste0("Komponente_", names(KKrit[2:4])))
 ```
 
 ##Fahrzeuge
@@ -331,26 +358,47 @@ OEM21 <- read.csv2(path.OEM21, stringsAsFactors = FALSE)
 OEM22 <- read.csv2(path.OEM22, stringsAsFactors = FALSE)
 
 ```
+Tabellen Vorbereiten
+```{r}
+OEM11.new <- OEM11 %>%
+  select(2:6)
+OEM12.new <- OEM12 %>%
+  select(2:6)
+OEM21.new <- OEM21 %>%
+  select(2:6)
+OEM22.new <- OEM22 %>%
+  select(2:6)
+
+  names(OEM11.new) <- paste0("Fahrzeug_",names(OEM11.new))
+  names(OEM12.new) <- paste0("Fahrzeug_",names(OEM12.new))
+  names(OEM21.new) <- paste0("Fahrzeug_",names(OEM21.new))
+  names(OEM22.new) <- paste0("Fahrzeug_",names(OEM22.new))
+
+```
 
 Fahrzeuge mit kritischen Komponenten
 
 ```{r message=FALSE, warning=FALSE}
-OEM11BF <- inner_join(OEM11B,KJF, by = c("ID_Sitze" = "ID_K2LE2"))%>%
-  select(4,6)
+OEM11F <- inner_join(OEM11B,KKrit, by = c("ID_Sitze" = "Komponente_ID"))%>%
+  select(4,6:9)%>%
+  left_join(select(OEM11.new,1:4),by = c("ID_Fahrzeug" = "Fahrzeug_IDNummer"))
 
-OEM12BF <- inner_join(OEM12B,KJF, by = c("ID_Sitze" = "ID_K2LE2"))%>%
-  select(4,6)
+OEM12F <- inner_join(OEM12B,KKrit, by = c("ID_Sitze" = "Komponente_ID"))%>%
+  select(4,6:9)%>%
+  left_join(select(OEM12.new,1:4),by = c("ID_Fahrzeug" = "Fahrzeug_IDNummer"))
 
-OEM21BF <- inner_join(OEM21B,KJF, by = c("ID_Sitze" = "ID_K2LE2"))%>%
-  select(5,7)
+OEM21F <- inner_join(OEM21B,KKrit, by = c("ID_Sitze" = "Komponente_ID"))%>%
+  select(5,7:10)%>%
+  left_join(select(OEM21.new,1:4),by = c("ID_Fahrzeug" = "Fahrzeug_IDNummer"))
 
-OEM22BF <- inner_join(OEM22B,KJF, by = c("ID_Sitze" = "ID_K2LE2"))%>%
-  select(5,7)
+OEM22F <- inner_join(OEM22B,KKrit, by = c("ID_Sitze" = "Komponente_ID"))%>%
+  select(5,7:10)%>%
+  left_join(select(OEM22.new,1:4),by = c("ID_Fahrzeug" = "Fahrzeug_IDNummer"))
 
 
-OEMF <- full_join(OEM11BF,OEM12BF)%>%
-  full_join(OEM21BF)%>%
-  full_join(OEM22BF)
+OEMF <- full_join(OEM11F,OEM12F)%>%
+  full_join(OEM21F)%>%
+  full_join(OEM22F)
 
 head(OEMF)
 ```
@@ -367,6 +415,48 @@ Zul_aller.new <- Zul_aller%>%
 
 GesTab <- left_join(OEMF,Zul_aller.new, by =c("ID_Fahrzeug" = "IDNummer"))%>%
   left_join(Geo.new, by = c("Gemeinden" = "Gemeinde"))
+GesTab$Zulassung <-  as.Date(GesTab$Zulassung, format = "%Y-%m-%d")
 
 head(GesTab)
+NATest(GesTab)
+Geo[Geo$Gemeinde == "SEEG",]
+```
+
+Keine Geo Daten für den Ort Seeg
+
+```{r}
+#Aus dem Internet PLZ und Werte für L. und B. Grade
+GesTab$Postleitzahl[GesTab$Gemeinden == "SEEG"] <- 87637
+GesTab$Längengrad[GesTab$Gemeinden == "SEEG"] <- 10.6104157
+GesTab$Breitengrad[GesTab$Gemeinden == "SEEG"] <- 47.6542215
+
+
+ggplot(GesTab, aes(x = Zulassung))+
+  geom_bar()
+
+
+
+ggplot(GesTab, aes(x = Längengrad, y = Breitengrad))+
+  geom_point()
+  #scale_fill_gradient(low ="#00BFC4", high = "#F8766D")
+
+GesTabCount <- count(GesTab,Postleitzahl)%>%
+  left_join(Geo, by ="Postleitzahl")%>%
+  arrange(n)
+
+ggplot(GesTabCount, aes(x = Längengrad, y = Breitengrad, colour = n, alpha = n))+
+  geom_point()+
+  scale_colour_gradient(low = "#FFCC66", high = "red")
+
+ggplot(GesTabCount, aes(x = Längengrad, y = Breitengrad, colour = n))+
+  geom_point()+
+  scale_colour_gradient(low = "yellow", high = "red")
+
+ggplot(GesTabCount, aes(x = Längengrad, y = Breitengrad, colour = n, size = n, alpha = 0.3))+
+  geom_point()+
+  scale_colour_gradient(low = "#ffd633", high = "red")
+
+ggplot(GesTabCount, aes(x = Längengrad, y = Breitengrad, colour = n, size = n, alpha = n))+
+  geom_point()+
+  scale_colour_gradient(low = "#ffd633", high = "red")
 ```
