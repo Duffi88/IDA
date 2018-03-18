@@ -425,8 +425,8 @@ server <- function(input, output, session) {
   output$plot_prod <- renderPlot({
     data <- Logistikverzug[Logistikverzug$Produktionsdatum >=
                              as.Date(paste(as.character(input$year.start), as.character(input$month.start), "01", sep = "-"))
-                           & Logistikverzug$Produktionsdatum <=
-                             as.Date(paste(as.character(input$year.end), as.character(input$month.end), "31", sep = "-")),]
+                           & Logistikverzug$Produktionsdatum <
+                             as.Date(paste(as.character(input$year.end), as.character(input$month.end), "01", sep = "-")),]
     month_input <- c(input$jan, input$feb, input$mar, input$apr, input$may, input$jun,
                      input$jul, input$aug, input$sep, input$oct, input$nov, input$dec)
     col_input <- c(input$col.jan, input$col.feb, input$col.mar, input$col.apr, input$col.may, input$col.jun,
