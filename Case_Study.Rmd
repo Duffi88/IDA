@@ -540,7 +540,7 @@ ggplot(GesTabCount, aes(x = Längengrad, y = Breitengrad, colour = n, size = n, 
   geom_point()+
   scale_colour_gradient(low = "#ffd633", high = "red")
 ```
-Welche Fahrzeugtypen sind welchen Gebieten betroffen?
+In welchen Gebieten sind welche Fahrzeugtypen betroffen?
 ```{r}
 ggplot(GesTabCount, aes(x = Längengrad, y = Breitengrad, colour = Fahrzeug_Typ, size = n, alpha = n))+
   geom_point(position = position_jitter())
