@@ -1,3 +1,4 @@
+
 ---
 title: "Case_Study"
 output: html_document
@@ -118,7 +119,6 @@ Falsches Datumsformat, mit Origin angegeben
 ###T19
 ```{r}
 firstGlance(T19)
-NATest(T19)
 ```
 Struktur: Nicht in Ordnung - Zeilen sind zum Teil nebeneinander gerutscht - Spaltennamen existieren doppelt. 
 
