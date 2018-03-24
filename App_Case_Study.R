@@ -33,7 +33,7 @@ geodaten <- geodaten %>%
   select(Gemeinde = 4, Laenge = 5, Breite = 6)
 
 # Import Fahrzeugzulassungen
-zulassungen <- read_csv2("Zulassungen_alle_Fahrzeuge.csv", n_max = 10000)
+zulassungen <- read_csv2("Zulassungen_alle_Fahrzeuge.csv")
 zulassungen <- zulassungen %>%
   select(IDNummer, Gemeinde = Gemeinden, Zulassung)
 
@@ -45,6 +45,7 @@ ui <- dashboardPage(skin = "red",
                       title = "Shiny-App"
                     ),
                     dashboardSidebar(
+                      width = "300px",
                       sidebarMenu(
                         id = "sidebar_menu",
                         menuItem(
@@ -55,6 +56,16 @@ ui <- dashboardPage(skin = "red",
                           text = "Einstellungen",
                           tabName = "einstellungen"
                         )
+                      ),
+                      fluidRow(
+                          dateRangeInput(inputId = "dateRange",
+                                         label = paste("Zeitraum auswählen"),
+                                         start = as.Date("2009-01-02"), end = as.Date("2016-12-30"),
+                                         min = as.Date("2009-01-02"), max = as.Date("2016-12-30"),
+                                         separator = " - ", format = "dd/mm/yy",
+                                         startview = "year", language = "de", weekstart = 1,
+                                         width = "100%"
+                        )
                       )
                     ),
                     dashboardBody(
@@ -64,35 +75,29 @@ ui <- dashboardPage(skin = "red",
                           fluidRow(
                             tabBox(
                               id = "tabBox_karten",
-                              width = 12,
+                              width = "100%",
+                              height = "600px",
                               tabPanel(
                                 title = "Karte",
                                 leafletOutput(
-                                  outputId = "output_standardkarte"
+                                  outputId = "output_standardkarte",
+                                  width = "100%",
+                                  height = "600px"
                                 )
                               ),
                               tabPanel(
                                 title = "Heatmap",
                                 leafletOutput(
-                                  outputId = "output_heatmap"
+                                  outputId = "output_heatmap",
+                                  width = "100%",
+                                  height = "600px"
                                 )
                               )
                             )
                           )
                         ),
                         tabItem(
-                          tabName = "einstellungen",
-                          fluidRow(
-                            box(
-                              dateRangeInput('dateRange',
-                                             label = paste('Zeitraum auswählen'),
-                                             start = as.Date("2009-01-02"), end = as.Date("2016-12-30"),
-                                             min = as.Date("2009-01-02"), max = as.Date("2016-12-30"),
-                                             separator = " - ", format = "dd/mm/yy",
-                                             startview = 'year', language = 'de', weekstart = 1
-                              )
-                            )
-                          )
+                          tabName = "einstellungen"
                         )
                       )
                     )
@@ -105,14 +110,20 @@ server <- function(input, output, session) {
     leaflet(data = data_final()) %>%
       addTiles() %>%
       setView(lng = 10.4775, lat = 51.16, zoom = 5) %>%
-      addWebGLHeatmap(lng = ~Längengrad, lat = ~Breitengrad, opacity = 0.5)
+      addHeatmap(lng = ~Längengrad, 
+                 lat = ~Breitengrad, 
+                 minOpacity = 0.5,
+                 radius = 15,
+                 blur = 20)
   })
   
   output$output_standardkarte <- renderLeaflet({
     leaflet(data = data_final_count()) %>%
       addTiles() %>%
       setView(lng = 10.4775, lat = 51.16, zoom = 5) %>%
-      addMarkers(lng = ~Laenge, lat = ~Breite, popup = ~Gemeinden)
+      addMarkers(lng = ~Laenge, 
+                 lat = ~Breite, popup = ~Gemeinden,
+                 clusterOptions = markerClusterOptions())
   })
   
   data_final <- reactive({
@@ -126,7 +137,6 @@ server <- function(input, output, session) {
       filter(Zulassung >= input$dateRange[1] & Zulassung <= input$dateRange[2])%>%
       count(Gemeinden)%>%
       left_join(geodaten, by = c("Gemeinden" = "Gemeinde"))
-    
   })
 }
 
