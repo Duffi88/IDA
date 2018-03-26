@@ -23,23 +23,10 @@ if(!require(leaflet.extras)){
   require(leaflet.extras)
 }
 
+#Datensatz importieren
 data_origin <- readRDS(file = "Case_Study_Datensatz.rds")
 
-# Da noch kein Datensatz vorhanden ist, wird er hier erstellt, das sollte am Ende im .Rmd passieren
-
-# Import Geodaten
-geodaten <- read_csv2("Geodaten_Gemeinden.csv")
-geodaten <- geodaten %>%
-  select(Gemeinde = 4, Laenge = 5, Breite = 6)
-
-# Import Fahrzeugzulassungen
-zulassungen <- read_csv2("Zulassungen_alle_Fahrzeuge.csv", n_max = 10000)
-zulassungen <- zulassungen %>%
-  select(IDNummer, Gemeinde = Gemeinden, Zulassung)
-
-# Join
-data <- inner_join(zulassungen, geodaten, by = "Gemeinde")
-
+#ui
 ui <- dashboardPage(skin = "red",
                     dashboardHeader(
                       title = "Shiny-App"
@@ -91,6 +78,32 @@ ui <- dashboardPage(skin = "red",
                                              separator = " - ", format = "dd/mm/yy",
                                              startview = 'year', language = 'de', weekstart = 1
                               )
+                            ),
+                            box(
+                              checkboxGroupInput('fahrzeug',
+                                                 label = "Fahrzeugtypen:",
+                                                 choices = c("OEM 11" = "11",
+                                                             "OEM 12" = "12",
+                                                             "OEM 21" = "21",
+                                                             "OEM 22" = "22"),
+                                                 selected = c("11" ,
+                                                              "12",
+                                                              "21",
+                                                              "22")
+                                
+                              )
+                              
+                            ),
+                            box(
+                              checkboxGroupInput('sitz',
+                                                 label = "Sitztypen:",
+                                                 choices = c("Typ K2LE1" = "K2LE1",
+                                                             "Typ K2LE2" = "K2LE2"),
+                                                 selected = c("K2LE1" ,
+                                                              "K2LE2")
+                                                 
+                              )
+                              
                             )
                           )
                         )
@@ -112,22 +125,32 @@ server <- function(input, output, session) {
     leaflet(data = data_final_count()) %>%
       addTiles() %>%
       setView(lng = 10.4775, lat = 51.16, zoom = 5) %>%
-      addMarkers(lng = ~Laenge, lat = ~Breite, popup = ~Gemeinden)
+      addMarkers(lng = ~Längengrad, lat = ~Breitengrad, popup = ~Gemeinden)
   })
   
   data_final <- reactive({
     data_origin %>%
-      filter(Zulassung >= input$dateRange[1] & Zulassung <= input$dateRange[2])
+      filter(Zulassung >= input$dateRange[1] & Zulassung <= input$dateRange[2])%>%
+      filter(Sitz_Art == input$sitz)%>%
+      filter(Fahrzeug_Typ == input$fahrzeug)
 
   })
   
   data_final_count <- reactive({
     data_origin  %>%
       filter(Zulassung >= input$dateRange[1] & Zulassung <= input$dateRange[2])%>%
+      filter(Sitz_Art == input$sitz)%>%
+      filter(Fahrzeug_Typ == input$fahrzeug)%>%
       count(Gemeinden)%>%
-      left_join(geodaten, by = c("Gemeinden" = "Gemeinde"))
+      left_join(geodaten, by ="Gemeinden" )
     
   })
+  
+  geodaten <- {
+    unique(data_origin[,c("Gemeinden","Postleitzahl","Längengrad","Breitengrad")])
+    
+  }
 }
+
 
 shinyApp(ui, server)
