@@ -23,29 +23,53 @@ if(!require(leaflet.extras)){
   require(leaflet.extras)
 }
 
+#Datensatz importieren
 data_origin <- readRDS(file = "Case_Study_Datensatz.rds")
 
-# Da noch kein Datensatz vorhanden ist, wird er hier erstellt, das sollte am Ende im .Rmd passieren
-
-# Import Geodaten
-geodaten <- read_csv2("Geodaten_Gemeinden.csv")
-geodaten <- geodaten %>%
-  select(Gemeinde = 4, Laenge = 5, Breite = 6)
-
-# Import Fahrzeugzulassungen
-zulassungen <- read_csv2("Zulassungen_alle_Fahrzeuge.csv")
-zulassungen <- zulassungen %>%
-  select(IDNummer, Gemeinde = Gemeinden, Zulassung)
-
-# Join
-data <- inner_join(zulassungen, geodaten, by = "Gemeinde")
-
+#ui
 ui <- dashboardPage(skin = "red",
                     dashboardHeader(
                       title = "Shiny-App"
                     ),
                     dashboardSidebar(
                       width = "300px",
+                      fluidRow(
+                            box(
+                              dateRangeInput('dateRange',
+                                             label = paste('Zeitraum auswählen'),
+                                             start = as.Date("2009-01-02"), end = as.Date("2016-12-30"),
+                                             min = as.Date("2009-01-02"), max = as.Date("2016-12-30"),
+                                             separator = " - ", format = "dd/mm/yy",
+                                             startview = 'year', language = 'de', weekstart = 1
+                              )
+                            ),
+                            box(
+                              checkboxGroupInput('fahrzeug',
+                                                 label = "Fahrzeugtypen:",
+                                                 choices = c("OEM 11" = "11",
+                                                             "OEM 12" = "12",
+                                                             "OEM 21" = "21",
+                                                             "OEM 22" = "22"),
+                                                 selected = c("11" ,
+                                                              "12",
+                                                              "21",
+                                                              "22")
+                                
+                              )
+                              
+                            ),
+                            box(
+                              checkboxGroupInput('sitz',
+                                                 label = "Sitztypen:",
+                                                 choices = c("Typ K2LE1" = "K2LE1",
+                                                             "Typ K2LE2" = "K2LE2"),
+                                                 selected = c("K2LE1" ,
+                                                              "K2LE2")
+                                                 
+                              )
+                              
+                            )
+                          ),
                       sidebarMenu(
                         id = "sidebar_menu",
                         menuItem(
@@ -128,16 +152,25 @@ server <- function(input, output, session) {
   
   data_final <- reactive({
     data_origin %>%
-      filter(Zulassung >= input$dateRange[1] & Zulassung <= input$dateRange[2])
+      filter(Zulassung >= input$dateRange[1] & Zulassung <= input$dateRange[2])%>%
+      filter(Sitz_Art == input$sitz)%>%
+      filter(Fahrzeug_Typ == input$fahrzeug)
 
   })
   
   data_final_count <- reactive({
     data_origin  %>%
       filter(Zulassung >= input$dateRange[1] & Zulassung <= input$dateRange[2])%>%
+      filter(Sitz_Art == input$sitz)%>%
+      filter(Fahrzeug_Typ == input$fahrzeug)%>%
       count(Gemeinden)%>%
-      left_join(geodaten, by = c("Gemeinden" = "Gemeinde"))
+      left_join(geodaten, by ="Gemeinden" )
   })
+  
+  geodaten <- {
+    unique(data_origin[,c("Gemeinden","Postleitzahl","Längengrad","Breitengrad")])
+    
+  }
 }
 
 shinyApp(ui, server)
