@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Um mit mit den Daten in R arbeiten zu können, müssen diese zuerst eingelesen und zusammengefügt werden.
 Außerdem muss die Spalte _Wareneingang_ formatiert werden, damit sie im Datumsformat vorliegt.
-```{r}
+```{r, message = FALSE}
 #Laden der nötigen Packages
 library(readr)
 library(dplyr)
@@ -31,41 +31,45 @@ Logistikverzug <- inner_join(Komponente_K7, Logistikverzug_K7, by = "IDNummer")
 Logistikverzug$Wareneingang <- as.Date(Logistikverzug$Wareneingang, format = "%d.%m.%Y")
 ```
 
-Um das Verteilungsmodell des Logistikverzuges ermitteln zu können, wird zuerst der Vektor _Verzug_ erstellt, der die Differenzen zwischen Warenausgang (also Produktionsdatum) und Wareneingang enthält. Danach werden die Verteilung des Verzuges visualisiert und Mittelwert und Median ermittelt. Da die Verteilung annähernd symmetrisch um den Mittelwert ist und Mittelwert und Median übereinstimmen, kann von einer Normalverteilung ausgegangen werden.
-Um die kürzeste und die längste Zeitspanne zwischen Warenausgang und Wareneingang herauszufinden, werden Minimum und Maximum des _Verzug_-Vektors ermittelt
+Um das Verteilungsmodell des Logistikverzuges ermitteln zu können, wird zuerst der Vektor _Verzug_ erstellt, der die Differenzen zwischen Warenausgang (also Produktionsdatum) und Wareneingang enthält. Danach werden die Daten zuerst einmal mittels eines Q-Q-Plots auf Normalverteilung überprüft. Dabei werden die Quantile der Daten (Sample Quantiles) gegen die theoretischen Quantile einer Normalverteilung (Theoretical Quantiles) geplottet. Ergibt sich dabei eine gerade Linie, kann man von einer Normalverteilung ausgehen. 
+Da sich bei der Überprüfung auf Normalverteilung eine leicht exponentiell verlaufende Kurve der diskreten Niveaus ergibt, wird nun der Logarithmus der Daten auf Normalverteilung getestet. Hierbei sind die diskreten Niveaus der Daten in einer geraden Linie angeordnet, man kann also von einer Log-Normalverteilung ausgehen.
+Um die kürzeste und die längste Zeitspanne zwischen Warenausgang und Wareneingang herauszufinden, werden Minimum und Maximum des _Verzug_-Vektors ermittelt; der Mittelwert der Verteilung beträgt 5.
+Zur Visualisierung der Verteilung wird ein Histogramm und der Graph der Dichtefunktion erzeugt.
 
 
-```{r}
+```{r, message = FALSE}
 # Erzeugen des Vektors "Verzug"
 Verzug <- as.numeric(difftime(Logistikverzug$Wareneingang, Logistikverzug$Produktionsdatum, units = "days"))
 
-# Darstellung der Verteilung
-df <- data.frame(Verzug)
-ggplot(df, aes(Verzug)) +
-  geom_histogram(aes(y = ..density..), binwidth = 0.6) +
-  stat_function(fun = dnorm, 
-                args = list(mean = mean(df$Verzug), sd = sd(df$Verzug)),
-                col = 'blue') +
-  geom_vline(xintercept = mean(Verzug), color = "red")
+# Q-Q-Plot Normalverteilung
+qqnorm(Verzug)
 
-# Mittelwert
-mean(Verzug)
-
-# Median
-median(Verzug)
+# Q-Q-Plot Log-Normalverteilung
+qqnorm(log(Verzug))
 
 # kürzeste Zeitspanne
 min(Verzug)
 
 # längste Zeitspanne
 max(Verzug)
+
+# Mittelwert der Verteilung
+mean(Verzug)
+
+# Darstellung der Verteilung
+df <- data.frame(Verzug)
+ggplot(df, aes(Verzug)) +
+  geom_histogram(aes(y = ..density..), binwidth = 0.6) +
+  stat_function(fun = dlnorm, 
+                args = list(meanlog = mean(log(df$Verzug)), sdlog = sd(log(df$Verzug))),
+                col = 'blue')
 ```
 
 ## 2.
 
 Bei gleichen Spaltennamen erhält die Spalte des ersten Datensatzes die Endung ".x", die des zweiten Datensatzes die Endung ".y".
 
-```{r}
+```{r, message = FALSE}
 names(Logistikverzug)
 ```
 
@@ -74,18 +78,17 @@ names(Logistikverzug)
 Mithilfe des `str`-Befehls kann man sich einen Überblick über den Datensatz verschaffen.
 Der Datensatz enthält 306490 Zeilen ("observations") und 11 Spalten ("variables"). Da vier der Spalten doppelt auftreten, beschreibt der Datensatz folglich sieben Merkmale.
 
-```{r}
+```{r, message = FALSE}
 str(Logistikverzug)
 ```
 
 ## 4.
 
-Um die Effektivität des Joins beurteilen zu können, wird die Anzahl der Zeilen eines der Ausgangsdatensätze (da beide Augangsdatensätze die gleiche Zeilenanzahl haben) mit der Anzahl der Zeilen des gejointen Datensatzes verglichen. Da bei der Anwendung von `inner_join` nur die Zeilen übernommen werden, die in beiden Ausgangsdatensätzen vorkommen, liegt die Effektivität des Joins nur dann bei 100%, wenn der Vergleich ergibt, dass die Zeilenanzahl die selbe ist.
+Um die Effektivität des Joins beurteilen zu können, wird die Anzahl der Zeilen eines der Ausgangsdatensätze (da beide Augangsdatensätze die gleiche Zeilenanzahl haben) mit der Anzahl der Zeilen des gejointen Datensatzes verglichen.
 
-```{r}
+```{r, message = FALSE}
 # Vergleich der Zeilenanzahl
-nrow(Logistikverzug) == nrow(Komponente_K7)
-
-# TRUE, die Effektivität liegt also bei 100 %
-
+nrow(Logistikverzug) / nrow(Komponente_K7)
 ```
+
+Das Verhältnis zwischen den Zeilenzahlen beträgt 1. Dementsprechend liegt die Effektivität des Joins bei 100%.
