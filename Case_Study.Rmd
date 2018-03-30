@@ -27,7 +27,7 @@ if(!require(RColorBrewer)){
   require(RColorBrewer)
 }
 ```
-##Methodischees Vorgehen
+##Methodisches Vorgehen
 
 Um heraus zu finden, welche Fahrzeuge kritische Einzelteile oder Komponenten enthalten, wird zuerst auf Einzelteilebene nach fehlerhaften Einzelteilen gesucht. Daraufhin schließt sich die Suche nach fehlerhaften Komponenten an.
 
