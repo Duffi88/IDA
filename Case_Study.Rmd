@@ -1,26 +1,49 @@
+
 ---
 title: "Case_Study"
 output: html_document
 ---
 
-```{r Packages, ,include=FALSE}
+```{r, message = FALSE, warning = FALSE}
 #Alle Packages
-library(tidyverse)
-library(lubridate)
-library(dplyr)
-library(ggplot2)
-library(scales)
-library(ggthemes)
-library(RColorBrewer)
+if(!require(tidyverse)){
+  install.packages("tidyverse")
+  require(tidyverse)
+}
+if(!require(lubridate)){
+  install.packages("lubridate")
+  require(lubridate)
+}
+if(!require(scales)){
+  install.packages("scales")
+  require(scales)
+}
+if(!require(ggthemes)){
+  install.packages("ggthemes")
+  require(ggthemes)
+}
+if(!require(RColorBrewer)){
+  install.packages("RColorBrewer")
+  require(RColorBrewer)
+}
 ```
-##Einführung
+##Gliederung und Methodisches Vorgehen
 
-Um heraus zu finden, welche Fahrzeuge kritisch sind, müssen sowohl die fehlerhaften Einzelteile, als auch die Komponenten, welche diese enthalten oder selber fehlerhaft sind, überprüft werden.
+Um heraus zu finden, welche Fahrzeuge kritische Einzelteile oder Komponenten enthalten, wird zuerst auf Einzelteilebene nach fehlerhaften Einzelteilen gesucht. Daraufhin schlieÃŸt sich die Suche nach fehlerhaften Komponenten an.
+
+**Gliederung**
+
+1. Funktionen zur ÃœberprÃ¼fung des Datensatzes
+2. Analyse Einzelteile
+3. Analyse Komponenten
+4. Analyse Fahrzeuge
 
 ##Funktionen
 
-###Funktion für Überblick über Dataframes
-```{r Funktion: First Glance}
+Um einen ersten Ãœberblick Ã¼ber die DatensÃ¤tze zu erlangen, verwenden wir die Funktion firstGlance(). Mit der Funktion NATest() wird gezÃ¤hlt wie viele NAs in den jeweiligen Spalten eines Datensatzes vorkommen.
+
+###Funktion fÃ¼r Ãœberblick Ã¼ber Dataframes
+```{r, message = FALSE}
   firstGlance <- function(x){
     print(summary(x))
     cat("\n")
@@ -31,31 +54,29 @@ Um heraus zu finden, welche Fahrzeuge kritisch sind, müssen sowohl die fehlerhaf
     print(tail(x))
   }
 ```
-###Funktion für NA Überprüfung
 
-```{r Funktion: NATest}
+###Funktion fÃ¼r NA ÃœberprÃ¼fung
+```{r, message = FALSE}
   NATest <- function(x){
     if(any(is.na(x))){
       for(i in 1:ncol(x)){
         if (nrow(x[is.na(x[i]),]) > 0){
-          print(paste("NA´s in",names(x[i])))
-          cat("\n")
-          print(x[is.na(x[i]),])
-          cat("\n")
-          cat("\n")
+          print(paste(nrow(x[is.na(x[i]),]), "NAÂ´s in", names(x[i])))
         }
       }
     }else{
-      print("Es existieren keine NA´s.")
+      print("Es existieren keine NAÂ´s.")
     }
   }
 ```
 
 
-##Einzelteile
+## Analyse der Einzelteile
 
-Zunächst müssen die einzelnen Tabellen der Einzelteile importiert werden, wobei auf die Zeilen und Reihentrennung(Komma o. Semikolon) zu achten ist.
-```{r Import: Einzelteil}
+### Import
+
+ZunÃ¤chst mÃ¼ssen die einzelnen Tabellen der Einzelteile importiert werden, wobei auf die Zeilen und Reihentrennung(Komma o. Semikolon) zu achten ist.
+```{r, message = FALSE}
   T11 <- read.csv2("Einzelteil_T11.csv", stringsAsFactors = FALSE)
   T14 <- read.csv2("Einzelteil_T14.csv", stringsAsFactors = FALSE)
   T15 <- read.csv2("Einzelteil_T15.csv", stringsAsFactors = FALSE)
@@ -63,101 +84,133 @@ Zunächst müssen die einzelnen Tabellen der Einzelteile importiert werden, wobei 
   T19 <- read.csv("Einzelteil_T19.csv", stringsAsFactors = FALSE)
   T20 <- read.csv2("Einzelteil_T20.csv", stringsAsFactors = FALSE)
 ```
-  
-###T11
-```{r T11}
+
+### Clean Data und Tidy Data
+
+Nachfolgend werden alle Einzelteiltabellen mit der firstGlance() und NATest() Funktion Ã¼berprÃ¼ft und Unstimmigkeiten behoben. Vorher wird allgemein der Aufbau der Einzelteile-DatensÃ¤tze verglichen, um prinzipiell einheitliche Tabellen zu erzeugen.
+
+####Allgemeiner Aufbau der Einzelteile-DatensÃ¤tze - Vergleich
+
+```{r, message = FALSE}
+head(T11)
+head(T14)
+head(T15)
+head(T16)
+head(T19)
+head(T20)
+```
+Anhand der Spaltennamen & EintrÃ¤ge sieht man, dass fÃ¼r unsere weitere Analyse nur die Spalten 2 bis 6 wichtig sind, alle anderen Spalten werden ausgeschlossen. Dies wird nun bei allen Einzelteile-DatensÃ¤tzen (auÃŸer T19) vorgenommen, um eine einheitliche Struktur zu erzeugen, um spÃ¤ter ein problemloses ZusammenfÃ¼hren der einzelnen Tabellen zu einer Gesamttabelle zu ermÃ¶glichen. T19 wird gesondert selected, weil die Strutur hier allgemein nicht in Ordnung ist, Spalten teilweise doppelt existieren etc.
+```{r, message = FALSE}
+#AuswÃ¤hlen der Spalten 2 bis 6
+T11.new <- T11%>%
+  select(2:6)
+T14.new <- T14%>%
+  select(2:6)
+T15.new <- T15%>%
+  select(2:6)
+T16.new <- T16 %>%
+  select(2:6)
+T20.new <- T20 %>%
+  select(2:6)
+```    
+
+Nun werden die einzelnen DatensÃ¤tze untersucht mit firstGlance() und NATest().
+
+####T11
+```{r, message = FALSE}
 firstGlance(T11)
 NATest(T11)
 ```
-Keine Auffälligkeiten außer, dass Produktionsdatum die Klasse "character" hat -> Umwandlung in Datumsformat
-```{r}
-  T11.new <- T11%>%
-    select(2:6)
-  T11.new$Produktionsdatum <- as.Date(T11$Produktionsdatum, format = "%Y-%m-%d")
+Keine AuffÃ¤lligkeiten auÃŸer, dass Produktionsdatum falschen Datentyp (character) hat -> Umwandlung in Datumsformat.
+```{r, message = FALSE}
+T11.new$Produktionsdatum <- as.Date(T11$Produktionsdatum, format = "%Y-%m-%d")
 ```
 
-###T14
-```{r T14}
+####T14
+```{r, message = FALSE}
 firstGlance(T14)
 NATest(T14)
 ```
-Keine Auffälligkeiten außer, dass Produktionsdatum den Datentyp "character" hat -> Umwandlung zu Datumsformat
-```{r}
- T14.new <- T14%>%
-    select(2:6)
+Keine AuffÃ¤lligkeiten auÃŸer, dass Produktionsdatum falschen Datentyp (character) hat -> Umwandlung zu Datumsformat
+```{r, message = FALSE}
 T14.new$Produktionsdatum <- as.Date(T14$Produktionsdatum, format = "%Y-%m-%d")
 ```
 
-###T15
-```{r T15}
+####T15
+```{r, message = FALSE}
 firstGlance(T15)
 NATest(T15)
 ```
-Wareneingangsdatum hat falschen Datentyp "character" -> Umwandlung zu Datumsformat
-```{r}
-  T15.new <- T15%>%
-    select(2:6)
-  T15.new$Wareneingangsdatum <-  as.Date(format(as.Date(T15.new$Wareneingangsdatum, format = "%d.%m.%Y"), "%Y-%m-%d"))
+Keine AuffÃ¤lligkeiten auÃŸer, dass Wareneingangsdatum falschen Datentyp (character) hat -> Umwandlung zu Datumsformat
+```{r, message = FALSE}
+T15.new$Wareneingangsdatum <-  as.Date(format(as.Date(T15.new$Wareneingangsdatum, format = "%d.%m.%Y"), "%Y-%m-%d"))
 ```
 
-###T16
-```{r T16}
+####T16
+```{r, message = FALSE}
 firstGlance(T16)
 NATest(T16)
 ```
-Falsches Datumsformat, mit Origin angegeben
-```{r}
-  #nur Spalte 2 bis 6 auswählen und damit u.a. Origin-Spalte aussschließen
-  T16.new <- T16 %>%
-    select(2:6)
-
-  #Produktionsdatum und Origin zu Datumsformat umwandeln und miteinander addieren
-  T16.new$Produktionsdatum <- as.Date(T16.new$Produktionsdatum, format = "%d",origin = as.Date("1970-01-01", format="%Y-%m-%d"))
+Produktionsdatum hat falschen Datentyp (double), zusÃ¤tzliche Origing Spalte, die das Ursprungsjahr angibt hat auch falschen Datentyp (character) -> Umwandlung beider zu Datumsformat 
+```{r, message = FALSE}
+#Produktionsdatum und Origin zu Datumsformat umwandeln und miteinander addieren
+T16.new$Produktionsdatum <- as.Date(T16.new$Produktionsdatum, format = "%d",origin = as.Date("1970-01-01", format="%Y-%m-%d"))
 ```
 
-###T19
-```{r T19}
+####T19
+```{r, message = FALSE}
 firstGlance(T19)
+NATest(T19)
 ```
-Struktur: Nicht in Ordnung - Zeilen sind zum Teil nebeneinander gerutscht - Spaltennamen existieren doppelt. 
+**Struktur:** Nicht in Ordnung - Zeilen sind zum Teil nebeneinander gerutscht -       Spaltennamen existieren doppelt. 
 
-NA´s: Viele NA´s, die nun genauer zu untersuchen sind. Laut NATest sind NA´s in IDNummer, Produktionsdatum, Herstellernummer, Werksnummer & Fehlerhaft.
-```{r}
-#zuerst Filtern der NA´s aus der IDNummer-Spalte
+**NAÂ´s:** Viele NAÂ´s, die nun genauer zu untersuchen sind. Laut NATest sind NAÂ´s in den Spalten IDNummer, Produktionsdatum, Herstellernummer, Werksnummer und Fehlerhaft jeweils 763284 NAÂ´s.
+
+
+*Vorgehen:* Um eine richtige Struktur zu erhalten, wird die T19 Tabelle in zwei separate Tabellen T19.1 und T19.2 getrennt (da die Spaltennamen doppelt exisieren) und aus jenen zuerst aus der IDNummer die NAÂ´s gefiltert. AnschlieÃŸend wird Ã¼berprÃ¼ft, ob weitere NAÂ´s existieren. Daraufhin mÃ¼sste in den nÃ¤chsten Spalten wo NAÂ´s auftreten gefiltert werden. 
+
+```{r, message = FALSE}
+#Tabelle T19 wird getrennt in T19.1 und T19.2 und NAÂ´s aus IDNummer herausgefiltert
 T19.1 <- select(T19[!is.na(T19$IDNummer),],1:6) 
 T19.2 <- select(T19[!is.na(T19$IDNummer1),],7:12)
 
-#Umbennen der Spaltenamen von T19.2 zu Originalnamen
+#Umbennen der Spaltenamen von T19.2 zu Originalnamen (Die Spaltennamen von T19.1 sind die Originalnamen)
 names(T19.2) <- names(T19.1)
 ```
-Betrachtung der einzelnen Tabellen
-```{r}
+Betrachtung der einzelnen Tabellen, um zu prÃ¼fen, ob es immer noch Unstimmigkeiten gibt:
+```{r, message = FALSE}
 firstGlance(T19.1)
 NATest(T19.1)
 
 firstGlance(T19.2)
 NATest(T19.2)
 ```
-Keine weiteren NA´s gefunden, kein weiteres Filtern in den anderen Spalten notwendig.
+* Keine weiteren NAÂ´s gefunden, es ist also kein weiteres Filtern von NAÂ´s in den anderen Spalten notwendig.
 
-IDNummern sind jeweils falsch bzgl. der Zuordnung von Bauteil, Herstellernummer und  Werksnummer 
-```{r warning=FALSE}
+* Produktionsdatum hat bei T19.1 als auch bei T19.2 falschen Datentyp (character) -> Umwandlung zu Datumsformat
+
+* bei 19.1 sind die IDNummern jeweils bezgl. des Bauteils falsch (statt 15 sollte an der Stelle eine 19 stehen)
+
+* bei 19.2 sind die IDNummern jeweils falsch bzgl. der Zuordnung von Bauteil, Herstellernummer und  Werksnummer 
+
+*Vorgehen:* Durch Aufspalten der IDNummer in die jeweiligen Teile die geÃ¤ndert werden mÃ¼ssen und anschlieÃŸendem ZusammenfÃ¼gen der richtigen Spalten, wird die korrekte IDNummer erzeugt. Die Tabellen mit den korrekten IDNummern heiÃŸen dann T19.1uni und T19.2uni. AnschlieÃŸend werden diese Tabellen zu T19.new zusammengefasst, die Spalten 2 bis 6 ausgeÃ¤hlt (wie bei den anderen Einzelteile-DatensÃ¤tzen) und zu guter Letztd der falsche Datentyp des Produktionsdatum behoben (character zu Datumsformat).
+```{r, message = FALSE, warning=FALSE}
 #T19.2sep
-#IDNummer aufspalten, indem Hilfsspalten (BT, Herst, Werk, X) hinzugefügt werden
+#IDNummer aufspalten, indem Hilfsspalten (BT, Herst, Werk, X) hinzugefÃ¼gt werden
 T19.2sep <- T19.2 %>%
   separate(IDNummer, c("BT","Herst","Werk","X"), sep = c("-","-","-")) 
 
 #Zuweisung BT - es handelt sich um das Bauteil 19
 T19.2sep$BT <- 19
 
-#richtiges Zusammenfassen (unit) der einzelnen Spalten, aus denen IDNummer besteht und anschließendes Ausschließen der Hilfsspalten (select)
+#richtiges Zusammenfassen (unit) der einzelnen Spalten, aus denen IDNummer besteht und anschlieÃŸendes AusschlieÃŸen der Hilfsspalten (select)
 T19.2uni <- T19.2sep%>%
   unite(col = IDNummer, BT, Herstellernummer, Werksnummer, X, sep = c("-","-","-"),remove = FALSE)%>%
   select( X1,IDNummer,Produktionsdatum,Herstellernummer,Werksnummer,Fehlerhaft)
 
 #T19.1sep
 #nur die Bauteilnummer ist falsch, deswegen wird die IDNummer nur in BT und Rest aufgesplittet
-#weitere Schritte sind äquivalent zu T19.2
+#weitere Schritte sind Ã¤quivalent zu T19.2
 T19.1sep <- T19.1%>%
   separate(IDNummer, c("BT","Rest"),sep = c("-"), extra = "merge")
 T19.1sep$BT <- 19
@@ -165,30 +218,32 @@ T19.1uni <- T19.1sep%>%
   unite(col = IDNummer, BT, Rest, sep = c("-"))%>%
   select(X1,IDNummer,Produktionsdatum,Herstellernummer,Werksnummer,Fehlerhaft)
 
-#Zusammenfügen von T19.1uni und T19.2uni  
+#ZusammenfÃ¼gen von T19.1uni und T19.2uni  
 T19.new <- arrange(bind_rows(T19.1uni,T19.2uni),X1)%>%
     select(2:6)
+
+#zu Datumsformat Ã¤ndern
+T19.new$Produktionsdatum <- as.Date(T19.new$Produktionsdatum, format = "%Y-%m-%d")
 ```
 
-###T20
-```{r T20}
+####T20
+```{r, message = FALSE}
 firstGlance(T20)
 NATest(T20)
 ```
-Falsches Datumsformat (character) und NA's
-```{r}
-  T20.new <- T20%>%
-    select(2:6)
-  T20.new$Produktionsdatum <-  as.Date(format(as.Date(T20$Produktionsdatum, format = "%d.%m.%Y"), "%Y-%m-%d"))
+* Produktionsdatum hat falschen Datentyp (character) -> Umwandlung zu Datumsformat
+* NA's existieren
+```{r, message = FALSE}
+T20.new$Produktionsdatum <- as.Date(format(as.Date(T20$Produktionsdatum, format = "%d.%m.%Y"), "%Y-%m-%d"))
   
-#NA´s beseitigen
+#NAÂ´s beseitigen
 T20.new$Fehlerhaft[T20$IDNummer == "20-209-2091-96178"] <- 1
 T20.new$Herstellernummer[T20$IDNummer == "20-211-2111-271"] <- 211
 T20.new$Werksnummer[T20$IDNummer == "20-211-2111-49809"] <- 2111
 ```
 
-##Umbenennen der Einzelteile-Spaltennamen für die Komponententabelle
-```{r Einzelteil-Spaltenname}
+###Umbenennen der Einzelteile-Spaltennamen fÃ¼r die Komponententabelle
+```{r, message = FALSE}  
   #Namen an Komponenten Tabelle anpassen
   names(T11.new) <- paste0("T11_",names(T11.new))
   names(T14.new) <- paste0("T14_",names(T14.new))
@@ -198,10 +253,11 @@ T20.new$Werksnummer[T20$IDNummer == "20-211-2111-49809"] <- 2111
   names(T20.new) <- paste0("T20_",names(T20.new))
 ```
 
+###Understand
 
+Die fehlerhaften Einzelteile werden ermittelt und im Anschluss gezÃ¤hlt.
 
-###Fehlerhafte Teile
-```{r Filter Fehlerhafte Einzelteile}
+```{r, message = FALSE}
   T11F <- T11.new %>%
     filter(T11_Fehlerhaft == 1)%>%
     select(1:4)
@@ -220,10 +276,7 @@ T20.new$Werksnummer[T20$IDNummer == "20-211-2111-49809"] <- 2111
   T20F <- T20.new %>%
     filter(T20_Fehlerhaft == 1)%>%
     select(1:4)
-```
 
-Auffälligkeiten - Fehlerhäufigkeiten
-```{r}
 nrow(T11F)
 nrow(T14F)
 nrow(T15F)
@@ -231,9 +284,9 @@ nrow(T16F)
 nrow(T19F)
 nrow(T20F)
 ```
-Bei T15 und T20 sehr viele fehlerhafte Teile
-
-```{r}
+AuffÃ¤llig ist, dass bei den Einzelteilen T15 und T20 sehr viele fehlerhafte Teile vorhanden sind. Die Fehlerzahlen bei allen anderen Einzelteilen stellen im Vergleich zur Gesamtanzahl der Teile lediglich ein grundsÃ¤tzlich vorhandenes Fehlerrauschen dar.
+ 
+```{r, message = FALSE}
 #T15
 #wie viele Einzelteile gab es zu welchem Wareneingangsdatum INSGESAMT
 T15GC <- count(T15.new,T15_Wareneingangsdatum)
@@ -281,11 +334,15 @@ ggplot(T20CC, aes(x = T20_Produktionsdatum))+
 #  ylab("Prozent. Anteil")
 ```
 
-##Komponenten
+Aus den beiden Visualisierungen wird ersichtlich, dass der GroÃŸteil der fehlerhaften Einzelteile von T15 in vier bestimmen ZeitrÃ¤umen produziert wurde, wohingegen bei Einzelteil T20 eine konstante Ausfallrate Ã¼ber den gesamten Zeitraum vorliegt.
 
-Es müssen alle Komponenten herausgefiltert werden, die beschädigt sind oder in denen fehlerhafte Teile verbaut sind.
+## Analyse der Komponenten
 
-```{r}
+Es mÃ¼ssen alle Komponenten herausgefiltert werden, die beschÃ¤digt sind oder in denen fehlerhafte Teile verbaut sind.
+
+###Import
+
+```{r, message = FALSE}
 path.K2LE1B <- "Bestandteile_Komponente_K2LE1.csv" 
 path.K2LE2B <- "Bestandteile_Komponente_K2LE2.csv" 
 path.K2LE1 <- "Komponente_K2LE1.csv" 
@@ -297,8 +354,8 @@ K2LE1 <- read.csv2(path.K2LE1, stringsAsFactors = FALSE)
 K2LE2 <- read.csv2(path.K2LE2, stringsAsFactors = FALSE)
 ```
 
-Prüfen, ob Struktur der Tabellen richtig ist
-```{r}
+PrÃ¼fen, ob Struktur der Tabellen richtig ist.
+```{r, message = FALSE}
 #K2LE1B
 firstGlance(K2LE1B)
 NATest(K2LE1B)
@@ -315,20 +372,20 @@ NATest(K2LE1)
 firstGlance(K2LE2)
 NATest(K2LE2)
 ```
-Alle Tabellen richtig außer bei K2LE2 ist IDNummer fehlerhaft (nur der erste Teil)          
+Die Struktur aller Komponententabellen bis auf K2LE2 ist richtig. Bei K2LE2 ist der erst Teil der IDNummer fehlerhaft und bedarf einer Korrektur-
 
-```{r}
+```{r, message = FALSE}
 #IDNummer aufsplitten
 K2LE2.sep <- K2LE2%>%
   separate(IDNummer, c("KK","Rest"),sep = "-", extra = "merge")
 
-#ersten Teil richtig benennen
+#Ersten Teil richtig benennen
 K2LE2.sep$KK <- "K2LE2"
 K2LE2.new <- unite(K2LE2.sep,col = IDNummer, KK, Rest, sep = "-")
 ```
 ###Komponenten-Tabellen mit Einzelteile-Tabellen joinen und Fehler filtern
 
-Komponenten filtern, die fehlerhafte Einzelteile enthalten
+Komponenten filtern, die fehlerhafte Einzelteile enthalten.
 ```{r message=FALSE, warning=FALSE}
 
 #K(omponente K2LE)1 J(oined with T)X
@@ -366,7 +423,7 @@ K2J20 <- select(K2LE2B,3:6)%>%
   left_join(select(T16.new,1:4), by= c("ID_T16" = "T16_IDNummer"))
 ```
 
-Zusammenführen der Tabellen, die zu einer Komponente gehören - damit sind für Komponentenart 1 und 2 alle Komponenten-ID´s ermittelt, die fehlerhafte Einzelteile enthalten.
+ZusammenfÃ¼hren der Tabellen, die zu einer Komponente gehÃ¶ren - damit sind fÃ¼r Komponentenart 1 und 2 alle Komponenten-IDÂ´s ermittelt, die fehlerhafte Einzelteile enthalten.
 ```{r message=FALSE, warning=FALSE}
 #Komponente Full Join mit Einzelteilen
 K1JF <- full_join(K1J11,K1J14)%>%
@@ -376,15 +433,15 @@ K2JF <- full_join(K2J16,K2J19)%>%
   full_join(K2J20)
 ```
 
-Auswählen der kritischen Komponenten + Eigenschaften
+AuswÃ¤hlen der kritischen Komponenten + Eigenschaften
 ```{r message=FALSE, warning=FALSE}
 
-#die Spalten "Produktionsdatum", "Herstellernummer", "Werksnummer" zu den Komponenten mit fehlerhaften Einzelteilen hinzufügen
+#Die Spalten "Produktionsdatum", "Herstellernummer", "Werksnummer" zu den Komponenten mit fehlerhaften Einzelteilen hinzufÃ¼gen
 K1Krit <- left_join(select(K1JF,4),select(K2LE1,2:5), by = c("ID_K2LE1" = "IDNummer"))%>%
   #fehlerhafte Komponenten mit Komponenten mit fehlerhaften Einzelteilen joinen
   full_join(K2LE1[K2LE1$Fehlerhaft == 1,2:5],by = c("ID_K2LE1" = "IDNummer","Produktionsdatum", "Herstellernummer", "Werksnummer"))
 
-#gleiches Vorgehen wie bei K1Krit
+#Gleiches Vorgehen wie bei K1Krit
 K2Krit <- left_join(select(K2JF,4),select(K2LE2.new,2:5), by = c("ID_K2LE2" = "IDNummer"))%>%
   full_join(K2LE2.new[K2LE2.new$Fehlerhaft == 1,2:5],by = c("ID_K2LE2" = "IDNummer","Produktionsdatum", "Herstellernummer", "Werksnummer"))
 
@@ -394,9 +451,10 @@ KKrit <- full_join(K1Krit,K2Krit, by = c("ID_K2LE1" = "ID_K2LE2","Produktionsdat
 names(KKrit) <- c("Komponente_ID",paste0("Komponente_", names(KKrit[2:4])))
 ```
 
-##Fahrzeuge
+## Analyse der Fahrzeuge
 
-```{r}
+### Import
+```{r, message = FALSE}
 path.OEM11B <- "Bestandteile_Fahrzeuge_OEM1_Typ11.csv" 
 path.OEM12B <- "Bestandteile_Fahrzeuge_OEM1_Typ12.csv" 
 path.OEM21B <- "Bestandteile_Fahrzeuge_OEM2_Typ21.csv" 
@@ -415,8 +473,8 @@ OEM12 <- read.csv2(path.OEM12, stringsAsFactors = FALSE)
 OEM21 <- read.csv2(path.OEM21, stringsAsFactors = FALSE)
 OEM22 <- read.csv2(path.OEM22, stringsAsFactors = FALSE)
 ```
-Tabellen Vorbereiten
-```{r}
+Vorbereitung der Tabellen
+```{r, message = FALSE}
 OEM11.new <- OEM11 %>%
   select(2:6)
 OEM12.new <- OEM12 %>%
@@ -426,7 +484,7 @@ OEM21.new <- OEM21 %>%
 OEM22.new <- OEM22 %>%
   select(2:6)
 
-#Umbenennen der Spaltennamen, damit man später in der Gesamt-Tabelle zwischen Fahrzeug und Komponenten unterscheiden kann 
+#Umbenennen der Spaltennamen, damit man spÃ¤ter in der Gesamt-Tabelle zwischen Fahrzeug und Komponenten unterscheiden kann 
   names(OEM11.new) <- paste0("Fahrzeug_",names(OEM11.new))
   names(OEM12.new) <- paste0("Fahrzeug_",names(OEM12.new))
   names(OEM21.new) <- paste0("Fahrzeug_",names(OEM21.new))
@@ -436,19 +494,19 @@ OEM22.new <- OEM22 %>%
 Fahrzeuge mit kritischen Komponenten
 
 ```{r message=FALSE, warning=FALSE}
-OEM11F <- inner_join(OEM11B,KKrit, by = c("ID_Sitze" = "Komponente_ID"))%>%
+OEM11F <- inner_join(OEM11B, KKrit, by = c("ID_Sitze" = "Komponente_ID"))%>%
   select(4,6:9)%>%
   left_join(select(OEM11.new,1:4),by = c("ID_Fahrzeug" = "Fahrzeug_IDNummer"))
 
-OEM12F <- inner_join(OEM12B,KKrit, by = c("ID_Sitze" = "Komponente_ID"))%>%
+OEM12F <- inner_join(OEM12B, KKrit, by = c("ID_Sitze" = "Komponente_ID"))%>%
   select(4,6:9)%>%
   left_join(select(OEM12.new,1:4),by = c("ID_Fahrzeug" = "Fahrzeug_IDNummer"))
 
-OEM21F <- inner_join(OEM21B,KKrit, by = c("ID_Sitze" = "Komponente_ID"))%>%
+OEM21F <- inner_join(OEM21B, KKrit, by = c("ID_Sitze" = "Komponente_ID"))%>%
   select(5,7:10)%>%
   left_join(select(OEM21.new,1:4),by = c("ID_Fahrzeug" = "Fahrzeug_IDNummer"))
 
-OEM22F <- inner_join(OEM22B,KKrit, by = c("ID_Sitze" = "Komponente_ID"))%>%
+OEM22F <- inner_join(OEM22B, KKrit, by = c("ID_Sitze" = "Komponente_ID"))%>%
   select(5,7:10)%>%
   left_join(select(OEM22.new,1:4),by = c("ID_Fahrzeug" = "Fahrzeug_IDNummer"))
 
@@ -458,11 +516,14 @@ OEMF <- full_join(OEM11F,OEM12F)%>%
   full_join(OEM22F)
 
 head(OEMF)
+nrow(OEMF)
 ```
+
+118082 Fahrzeuge enthalten Sitze, die entweder auf Komponentenebene fehlerhaft sind oder aus fehlerhaften Einzelteilen bestehen. Es gilt, herauszufinden, wo und wann diese Fahrzeuge zugelassen wurden.
 
 ##Zulassung & Geodaten
 
-```{r message=FALSE, warning=FALSE}
+```{r message = FALSE, warning = FALSE}
 Zul_aller <- read.csv2("Zulassungen_alle_Fahrzeuge.csv", stringsAsFactors = FALSE)
 Geo <- read.csv2("Geodaten_Gemeinden.csv", stringsAsFactors = FALSE)
 Geo.new <- Geo%>%
@@ -474,26 +535,27 @@ Zul_aller.new <- Zul_aller%>%
 GesTab <- left_join(OEMF,Zul_aller.new, by =c("ID_Fahrzeug" = "IDNummer"))%>%
   left_join(Geo.new, by = c("Gemeinden" = "Gemeinde"))
 GesTab$Zulassung <-  as.Date(GesTab$Zulassung, format = "%Y-%m-%d")
+names(GesTab) <- c("ID_Sitze", "ID_Fahrzeug", "Komponente_Produktionsdatum", "Komponente_Herstellernummer", "Komponente_Werksnummer", "Fahrzeug_Produktionsdatum", "Fahrzeug_Herstellernummer", "Fahrzeug_Werksnummer", "Gemeinden", "Zulassung", "Postleitzahl", "Laengengrad", "Breitengrad")
 
 head(GesTab)
 NATest(GesTab)
 ```
-NA´s in Spalten "Postleitzahl" "Längengrad" und "Breitengrad" (betrifft die Gemeinde "Seeg")
-```{r}
-#Überprüfung, ob die Gemeinde "Seeg" Geodaten hat
+NAs in Spalten "Postleitzahl", "Laengengrad" und "Breitengrad" (betrifft die Gemeinde "Seeg")
+```{r, message = FALSE}
+#ÃœberprÃ¼fung, ob die Gemeinde "Seeg" Geodaten hat
 Geo[Geo$Gemeinde == "SEEG",]
 ```
 
-Keine Geo Daten für den Ort Seeg
+Keine Geo Daten fÃ¼r den Ort Seeg
 
-```{r}
-#Aus dem Internet PLZ und Werte für L. und B. Grade
+```{r, message = FALSE}
+#Aus dem Internet PLZ und Werte fÃ¼r L. und B. Grade
 GesTab$Postleitzahl[GesTab$Gemeinden == "SEEG"] <- 87637
-GesTab$Längengrad[GesTab$Gemeinden == "SEEG"] <- 10.6104157
+GesTab$Laengengrad[GesTab$Gemeinden == "SEEG"] <- 10.6104157
 GesTab$Breitengrad[GesTab$Gemeinden == "SEEG"] <- 47.6542215
 ```
 ### Darstellungen
-```{r}
+```{r, message = FALSE}
 #IDNummer aufsplitten
 GesTab.sep <- GesTab%>%
   separate(ID_Sitze, c("Sitz_Art","Rest1"),sep = "-", remove = FALSE, extra = "merge")%>%
@@ -503,18 +565,19 @@ GesTab.new <- GesTab.sep%>%
   select(1:2,4:5,7:17)
 ```
 Welche Fahrzeugtypen sind am meisten von den fehlerhaften Sitzen betroffen und welche Sitzart ist mehr fehlerhaft?
-```{r}
+```{r, message = FALSE}
 ggplot(GesTab.new, aes(x = Sitz_Art, fill = Fahrzeug_Typ))+
-  geom_bar()
+  geom_bar() +
+  labs(x = "Sitzart", y = "Anzahl")
 ```
 Verteilung - Wann wurden Autos mit fehlerhaften Sitzen zugelasssen?
-```{r}
+```{r, message = FALSE}
 ggplot(GesTab, aes(x = Zulassung))+
   geom_bar()
 ```
 Wo wurden Autos mit fehlerhaften Sitzen zugelassen?
-```{r}
-ggplot(GesTab.new, aes(x = Längengrad, y = Breitengrad))+
+```{r, message = FALSE}
+ggplot(GesTab.new, aes(x = Laengengrad, y = Breitengrad))+
   geom_point()
   #scale_fill_gradient(low ="#00BFC4", high = "#F8766D")
 
@@ -523,30 +586,18 @@ GesTabCount <- count(GesTab.new,Postleitzahl)%>%
   select(1:2,4,6,13:16)%>%
   arrange(n)
 
-ggplot(GesTabCount, aes(x = Längengrad, y = Breitengrad, colour = n, alpha = n))+
-  geom_point()+
-  scale_colour_gradient(low = "#FFCC66", high = "red")
-
-ggplot(GesTabCount, aes(x = Längengrad, y = Breitengrad, colour = n))+
-  geom_point()+
-  scale_colour_gradient(low = "yellow", high = "red")
-
-ggplot(GesTabCount, aes(x = Längengrad, y = Breitengrad, colour = n, size = n, alpha = 0.4))+
-  geom_point()+
-  scale_colour_gradient(low = "#ffd633", high = "red")
-
-ggplot(GesTabCount, aes(x = Längengrad, y = Breitengrad, colour = n, size = n, alpha = n))+
+ggplot(GesTabCount, aes(x = Laengengrad, y = Breitengrad, colour = n, size = n, alpha = n))+
   geom_point()+
   scale_colour_gradient(low = "#ffd633", high = "red")
 ```
 In welchen Gebieten sind welche Fahrzeugtypen betroffen?
-```{r}
-ggplot(GesTabCount, aes(x = Längengrad, y = Breitengrad, colour = Fahrzeug_Typ, size = n, alpha = n))+
+```{r, message = FALSE}
+ggplot(GesTabCount, aes(x = Laengengrad, y = Breitengrad, colour = Fahrzeug_Typ, size = n, alpha = n))+
   geom_point(position = position_jitter())
 
 #Unterscheidung in Sitz_Art 1 und 2
 GesTabCount %>% filter(Fahrzeug_Typ %in% c("11", "12", "21", "22")) %>%
-    ggplot(aes(x=Längengrad, y=Breitengrad, color = Fahrzeug_Typ, group = Fahrzeug_Typ,size = n, alpha = n)) +
+    ggplot(aes(x=Laengengrad, y=Breitengrad, color = Fahrzeug_Typ, group = Fahrzeug_Typ,size = n, alpha = n)) +
     geom_point() +
     facet_grid( ~ Sitz_Art)
 
