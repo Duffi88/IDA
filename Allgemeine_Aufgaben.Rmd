@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Um mit mit den Daten in R arbeiten zu können, müssen diese zuerst eingelesen und zusammengefügt werden.
 Außerdem muss die Spalte _Wareneingang_ formatiert werden, damit sie im Datumsformat vorliegt.
-```{r}
+```{r, message = FALSE}
 #Laden der nötigen Packages
 library(readr)
 library(dplyr)
@@ -37,7 +37,7 @@ Um die kürzeste und die längste Zeitspanne zwischen Warenausgang und Wareneing
 Zur Visualisierung der Verteilung wird ein Histogramm und der Graph der Dichtefunktion erzeugt.
 
 
-```{r}
+```{r, message = FALSE}
 # Erzeugen des Vektors "Verzug"
 Verzug <- as.numeric(difftime(Logistikverzug$Wareneingang, Logistikverzug$Produktionsdatum, units = "days"))
 
@@ -69,7 +69,7 @@ ggplot(df, aes(Verzug)) +
 
 Bei gleichen Spaltennamen erhält die Spalte des ersten Datensatzes die Endung ".x", die des zweiten Datensatzes die Endung ".y".
 
-```{r}
+```{r, message = FALSE}
 names(Logistikverzug)
 ```
 
@@ -78,18 +78,17 @@ names(Logistikverzug)
 Mithilfe des `str`-Befehls kann man sich einen Überblick über den Datensatz verschaffen.
 Der Datensatz enthält 306490 Zeilen ("observations") und 11 Spalten ("variables"). Da vier der Spalten doppelt auftreten, beschreibt der Datensatz folglich sieben Merkmale.
 
-```{r}
+```{r, message = FALSE}
 str(Logistikverzug)
 ```
 
 ## 4.
 
-Um die Effektivität des Joins beurteilen zu können, wird die Anzahl der Zeilen eines der Ausgangsdatensätze (da beide Augangsdatensätze die gleiche Zeilenanzahl haben) mit der Anzahl der Zeilen des gejointen Datensatzes verglichen. Da bei der Anwendung von `inner_join` nur die Zeilen übernommen werden, die in beiden Ausgangsdatensätzen vorkommen, liegt die Effektivität des Joins nur dann bei 100%, wenn der Vergleich ergibt, dass die Zeilenanzahl die selbe ist.
+Um die Effektivität des Joins beurteilen zu können, wird die Anzahl der Zeilen eines der Ausgangsdatensätze (da beide Augangsdatensätze die gleiche Zeilenanzahl haben) mit der Anzahl der Zeilen des gejointen Datensatzes verglichen.
 
-```{r}
+```{r, message = FALSE}
 # Vergleich der Zeilenanzahl
-nrow(Logistikverzug) == nrow(Komponente_K7)
-
-# TRUE, die Effektivität liegt also bei 100 %
-
+nrow(Logistikverzug) / nrow(Komponente_K7)
 ```
+
+Das Verhältnis zwischen den Zeilenzahlen beträgt 1. Dementsprechend liegt die Effektivität des Joins bei 100%.
