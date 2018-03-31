@@ -92,7 +92,8 @@ ui <- fluidPage(
           selectInput(
             inputId = "month.end",
             label = "Monat",
-            choices = c(1:12)
+            choices = c(1:12),
+            selected = 12
           )
         ),
         column(
@@ -100,7 +101,8 @@ ui <- fluidPage(
           selectInput(
             inputId = "year.end",
             label = "Jahr",
-            choices = c(2008:2016)
+            choices = c(2008:2016),
+            selected = 2016
           )
         )
       )

@@ -38,6 +38,7 @@ Um heraus zu finden, welche Fahrzeuge kritische Einzelteile oder Komponenten ent
   + Clean Data and Tidy Data
   + Understand - fehlerhafte Einzelteile
   + Visualisierung der fehlerhaften Einzelteile
+  + Lieferantenanalyse
 3. Analyse Komponenten
   + Clean Data and Tidy Data
   + Kritische Komponten
@@ -380,6 +381,32 @@ ggplot(T20CC, aes(x = T20_Produktionsdatum))+
 
 Aus den beiden Visualisierungen wird ersichtlich, dass der Großteil der fehlerhaften Einzelteile von T15 in vier bestimmen Zeiträumen produziert wurde, wohingegen bei Einzelteil T20 eine konstante Ausfallrate über den gesamten Zeitraum vorliegt.
 
+#####Lieferantenanalyse
+
+Im Folgenden soll die Frage beantwortet werden, welche Lieferanten (Hersteller) unserem Unternehmen fehlerhafte Einzelteile geliefert haben.
+
+Mit table() bestimmen wir die absoluten Häufigkeiten der Fehler pro Hersteller für die kritischen Einzelteile T15 und T20.
+
+```{r, message = FALSE}
+table(T15F$T15_Herstellernummer)
+table(T20F$T20_Herstellernummer)
+```
+
+Der Hersteller 209 ist in die Produktion beider Einzelteile, die Hersteller 210 und 211 jeweils in die Produktion eines Einzelteils involviert.
+
+Um herauszufinden, ob einer der jeweils zwei Hersteller in größerem Maße für die fehlerhaften Einzelteile verantwortlich ist, werden die vom Hersteller fehlerhaft zu den insgesamt produzierten Einzelteilen ins Verhältnis gesetzt.
+
+```{r, message = FALSE}
+nrow(filter(T15F, T15_Herstellernummer == 209)) / nrow(filter(T15, Herstellernummer == 209))
+nrow(filter(T15F, T15_Herstellernummer == 210)) / nrow(filter(T15, Herstellernummer == 210))
+
+nrow(filter(T20F, T20_Herstellernummer == 209)) / nrow(filter(T20, Herstellernummer == 209))
+nrow(filter(T20F, T20_Herstellernummer == 211)) / nrow(filter(T20, Herstellernummer == 211))
+```
+
+Es ist ersichtlich, dass beide Hersteller jeweils in gleichem Maße für die Produktion fehlerhafter Teile verantwortlich sind.
+
+Für die beteiligten Hersteller müsste eine Analyse des produzierenden Werkes durchgeführt werden, um herauszufinden, ob die Fehler nur in einem Werk oder über das gesamte Unternehmen verteilt auftreten. Da die Einzelteile aber jeweils nur in einem einzigen Werk produziert werden, erübrigt sich die Analyse.
 
 ## 3.Analyse der Komponenten
 
@@ -522,6 +549,15 @@ K2Krit$Einzelteil_Fehlerhaft[which(K2Krit$ID_K2LE2 %in% K2JF$ID_K2LE2)] <- 1
 K2Krit$Komponente_Fehlerhaft <- 0
 K2Krit$Komponente_Fehlerhaft[which(K2Krit$ID_K2LE2 %in% filter(K2LE2.new, Fehlerhaft == 1)$IDNummer)] <- 1
 ```
+
+Die Anzahl der Fehler auf Komponentenebene wird betrachtet:
+
+```{r, message = FALSE}
+nrow(filter(K1Krit, Komponente_Fehlerhaft == 1))
+nrow(filter(K2Krit, Komponente_Fehlerhaft == 1))
+```
+
+Die Anzahl der Fehler auf Komponentenebene ist so gering, dass sie als Zufallsfehler interpretiert werden können.
 
 ####Kritische Komponenten gesamt 
 
