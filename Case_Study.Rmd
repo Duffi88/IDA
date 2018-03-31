@@ -762,7 +762,7 @@ GesTabCount %>% filter(Fahrzeug_Typ %in% c("11", "12", "21", "22")) %>%
 
 ```
 
-##6. Export des finalen Datensatzes
+## 6. Export des finalen Datensatzes
 
 Um den finalen Datensatz in einer Shiny-App ansprechend zu visualisieren, wird dieser im RDS-Format gespeichert und in das R-Skript für die Shiny-App importiert.
 
