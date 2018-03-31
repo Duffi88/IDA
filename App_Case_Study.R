@@ -76,6 +76,17 @@ ui <- dashboardPage(skin = "red",
                                          selected = c("K2LE1" ,
                                                       "K2LE2")
                                          
+                      ),
+                      checkboxGroupInput(
+                        inputId = "fehler",
+                        label = "Fehler liegt auf:",
+                        choices = c("Einzelteilebene" = "einzelteil",
+                                    "Komponentenebene" = "komponente"),
+                        selected = c("Einzelteilebene" = "einzelteil")
+                      ),
+                      actionButton(
+                        inputId = "update",
+                        label = "Update Karten"
                       )
                     )
                     ),
@@ -131,87 +142,100 @@ ui <- dashboardPage(skin = "red",
 
 server <- function(input, output, session) {
   
-  
   output$output_heatmap <- renderLeaflet({
-    leaflet(data = data_final()) %>%
-      addTiles() %>%
-      setView(lng = 10.4775, lat = 51.16, zoom = 5) %>%
-      addHeatmap(lng = ~Längengrad, 
-                 lat = ~Breitengrad, 
-                 minOpacity = 0.5,
-                 radius = 15,
-                 blur = 20)
+    input$update
+    isolate({
+      leaflet(data = data_final()) %>%
+        addTiles() %>%
+        setView(lng = 10.4775, lat = 51.16, zoom = 5) %>%
+        addHeatmap(lng = ~Laengengrad, 
+                   lat = ~Breitengrad, 
+                   minOpacity = 0.5,
+                   radius = 15,
+                   blur = 20)
+    })
   })
   
   output$output_standardkarte <- renderLeaflet({
-    data <- data_final_count()
-    if(input$cluster == TRUE){
-      leaflet(data = data) %>%
-        addTiles() %>%
-        setView(lng = 10.4775, lat = 51.16, zoom = 5) %>%
-        addAwesomeMarkers(lng = ~Längengrad, 
-                          lat = ~Breitengrad, 
-                          popup = paste("Gemeinde:", data$Gemeinden, "<br>", "Anzahl:", data$n, sep = ""),
-                          icon = icons(),
-                          clusterOptions = markerClusterOptions())
-    } else {
-      leaflet(data = data) %>%
-        addTiles() %>%
-        setView(lng = 10.4775, lat = 51.16, zoom = 5) %>%
-        addAwesomeMarkers(lng = ~Längengrad, 
-                          lat = ~Breitengrad, 
-                          popup = paste("Gemeinde:", data$Gemeinden, "<br>", "Anzahl:", data$n, sep = ""),
-                          icon = icons())
-    }
+    input$update
+    isolate({
+      data <- data_final_count()
+      if(input$cluster == TRUE){
+        leaflet(data = data) %>%
+          addTiles() %>%
+          setView(lng = 10.4775, lat = 51.16, zoom = 5) %>%
+          addAwesomeMarkers(lng = ~Laengengrad, 
+                            lat = ~Breitengrad, 
+                            popup = paste("Gemeinde:", data$Gemeinden, "<br>", "Anzahl:", data$n, sep = ""),
+                            icon = icons(),
+                            clusterOptions = markerClusterOptions())
+      } else {
+        leaflet(data = data) %>%
+          addTiles() %>%
+          setView(lng = 10.4775, lat = 51.16, zoom = 5) %>%
+          addAwesomeMarkers(lng = ~Laengengrad, 
+                            lat = ~Breitengrad, 
+                            popup = paste("Gemeinde:", data$Gemeinden, "<br>", "Anzahl:", data$n, sep = ""),
+                            icon = icons())
+      }
+    })
   })
   
   
   icons <- reactive({
+    input$update
     awesomeIcons(
       icon = 'ios-close',
       iconColor = 'black',
-      library = 'ion',
-      markerColor = map(data_final_count()$n, getColor)
+      library = 'ion'
     )
   })
   
-  getColor <- function(n){
-    color <- reactive({
-        if(n >= 100){
-          color = "black"
-        } else if(n >= 25){
-          color = "red"
-        } else if(n >= 5){
-          color = "orange"
-        } else if(n >= 2){
-          color = "yellow"
-        } else if(n >= 1){
-          color = "green"
-        }
-        return(color)
+  get_einzelteil_zahl <- function(){
+    zahl <-reactive({
+      if("einzelteil" %in% input$fehler){
+        zahl <- 1
+      } else {
+        zahl <- 0
+      }
     })
-    color()
+    zahl()
   }
   
-  data_final <- reactive({
-    data_origin %>%
+  get_komponente_zahl <- function(){
+    zahl <-reactive({
+      if("komponente" %in% input$fehler){
+        zahl <- 1
+      } else {
+        zahl <- 0
+      }
+    })
+    zahl()
+  }
+  
+  data_filter <- reactive({
+    data_return <- data_origin %>%
       filter(Zulassung >= input$dateRange[1] & Zulassung <= input$dateRange[2]) %>%
       filter(Sitz_Art %in% input$sitz) %>%
       filter(Fahrzeug_Typ %in% input$fahrzeug)
+    einzelteil_zahl <- get_einzelteil_zahl()
+    komponente_zahl <- get_komponente_zahl()
+    data_return <- filter(data_return, Einzelteil_Fehlerhaft == einzelteil_zahl, Komponente_Fehlerhaft == komponente_zahl)
+    return(data_return)
+  })
+  
+  data_final <- reactive({
+    data_filter()
   })
   
   data_final_count <- reactive({
-    data_origin  %>%
-      filter(Zulassung >= input$dateRange[1] & Zulassung <= input$dateRange[2]) %>%
-      filter(Sitz_Art %in% input$sitz) %>%
-      filter(Fahrzeug_Typ %in% input$fahrzeug) %>%
-      count(Gemeinden) %>%
+    data <- data_filter()
+    data_return <- count(data, Gemeinden) %>%
       left_join(geodaten, by = "Gemeinden")
   })
   
   geodaten <- {
-    unique(data_origin[,c("Gemeinden","Postleitzahl","Längengrad","Breitengrad")])
-    
+    unique(data_origin[,c("Gemeinden","Postleitzahl","Laengengrad","Breitengrad")])
   }
 }
 
