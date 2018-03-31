@@ -132,7 +132,7 @@ T20.new <- T20 %>%
   select(2:6)
 ```    
 
-Nun werden die einzelnen Datensätze untersucht mit firstGlance() und NATest().
+Nun werden die einzelnen Datensätze mit firstGlance() und NATest() untersucht.
 
 ####T11
 
@@ -154,7 +154,7 @@ firstGlance(T14)
 NATest(T14)
 ```
 
-Keine Auffälligkeiten außer, dass Produktionsdatum falschen Datentyp (character) hat -> Umwandlung zu Datumsformat
+Keine Auffälligkeiten außer, dass Produktionsdatum falschen Datentyp (character) hat -> Umwandlung in Datumsformat
 
 ```{r, message = FALSE}
 T14.new$Produktionsdatum <- as.Date(T14$Produktionsdatum, format = "%Y-%m-%d")
@@ -228,7 +228,7 @@ NATest(T19.2)
 
 * bei 19.2 sind die IDNummern jeweils falsch bzgl. der Zuordnung von Bauteil, Herstellernummer und  Werksnummer 
 
-*Vorgehen:* Durch Aufspalten der IDNummer in die jeweiligen Teile die geändert werden müssen und anschließendem Zusammenfügen der richtigen Spalten, wird die korrekte IDNummer erzeugt. Die Tabellen mit den korrekten IDNummern heißen dann T19.1uni und T19.2uni. Anschließend werden diese Tabellen zu T19.new zusammengefasst, die Spalten 2 bis 6 ausgeählt (wie bei den anderen Einzelteile-Datensätzen) und zu guter Letztd der falsche Datentyp des Produktionsdatum behoben (character zu Datumsformat).
+*Vorgehen:* Durch Aufspalten der IDNummer in die jeweiligen Teile die geändert werden müssen und anschließendem Zusammenfügen der richtigen Spalten, wird die korrekte IDNummer erzeugt. Die Tabellen mit den korrekten IDNummern heißen dann T19.1uni und T19.2uni. Anschließend werden diese Tabellen zu T19.new zusammengefasst, die Spalten 2 bis 6 ausgeählt (wie bei den anderen Einzelteile-Datensätzen) und zu guter Letztd der falsche Datentyp des Produktionsdatum behoben (character in Datumsformat).
 
 ```{r, message = FALSE, warning=FALSE}
 #T19.2sep
@@ -381,7 +381,7 @@ ggplot(T20CC, aes(x = T20_Produktionsdatum))+
 
 Aus den beiden Visualisierungen wird ersichtlich, dass der Großteil der fehlerhaften Einzelteile von T15 in vier bestimmen Zeiträumen produziert wurde, wohingegen bei Einzelteil T20 eine konstante Ausfallrate über den gesamten Zeitraum vorliegt.
 
-#####Lieferantenanalyse
+###Lieferantenanalyse
 
 Im Folgenden soll die Frage beantwortet werden, welche Lieferanten (Hersteller) unserem Unternehmen fehlerhafte Einzelteile geliefert haben.
 
@@ -507,7 +507,7 @@ K2J20 <- select(K2LE2B,3:6)%>%
   left_join(select(T16.new,1:4), by= c("ID_T16" = "T16_IDNummer"))
 ```
 
-#####Zusammenführen aller Komonenten-Datensätze mit fehlerhaften Einzelteilen
+#####Zusammenführen aller Komponenten-Datensätze mit fehlerhaften Einzelteilen
 
 Zusammenführen der neuen Datensätze, die zu einer Komponente gehören. Damit sind für Komponentenart 1 und 2 alle Komponenten-ID´s ermittelt, die fehlerhafte Einzelteile enthalten.
 
@@ -766,7 +766,7 @@ Die meisten Autos mit fehlerhaften Sitzen wurden folglich Mitte 2010, Mitte bis 
 ```{r, message = FALSE}
 GesTabCount <- count(GesTab.new, Postleitzahl)%>%
   left_join(GesTab.new, by ="Postleitzahl")%>%
-  select(1:2,4,6,13:16)%>%
+  select(1:2,4,6,15:18)%>%
   arrange(n)
 
 ggplot(GesTabCount, aes(x = Laengengrad, y = Breitengrad, colour = n, size = n, alpha = n))+
